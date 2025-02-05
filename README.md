@@ -14,18 +14,17 @@ I am unsure why the original source code hasn’t been published (in its origina
 
 ### Description
 
-While based of a disassembly 
+While based of a disassembly (which can be low qualtity) the following work has been done: 
+* Replaced all disassembler generated labels with meaningful labels
+* Ensured all jumps (JR and JP) reference valid code labels.
+* Replaced all $3xxx hardware references with `.EQU` definitions
+* Replaced all $4xxx buffer references with `.EQU` definitions, with a single `.EQU $4000` reference
+* Replaced all generated op-code with Byte `.DB` definitions for DataTables/Text/Constants/Etc
+* Added code documentation from various sources at the code block / function level
+* Added V1.3 modifications into the source code, with use of `#IFDEF`
+* Replaced incorrect op-codes, where Better Else "Trick" was used. See Reference below.
 
-* Replaced all disassembler generated Labels with meaningful labels
-* Ensured all jumps (JR and JP) referenced code labels.
-* Replaced $3xxx hardware references with EQU definitions
-* Replaced $4xxx buffer references with EQU definitions
-* Replaced generated op-code with Byte definitions for Data Tables/Text
-* Added code Documentation from various sources
-* Added Version 1.3 modifications into the source code
-* Replaced incorrect op-codes, where better else "Trick" was used.
-
-On the last point (see references that explains better else), I was unaware of these optimisations until I worked on this code.
+On the last point I was unaware of these optimisations until I worked on this code.
 
 ### Build and Test
 
