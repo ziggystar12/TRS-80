@@ -827,16 +827,14 @@ CLOD1:	call	CTBIT		;0298
 	ld	(vidmem + $3F),a;02a4
 	pop	hl		;02a7
 	ret			;02a8
-; ----------------------------------------------------------------------
-; 02A9H-0329H – LEVEL II SYSTEM ROUTINE-ENTRY POINT – “ENBLK”
-; ----------------------------------------------------------------------
+;
 ENBLK:	call	CADRIN		;02a9
 	ld	(TEMP),hl	;02ac
 	call	CTOFF		;02af
+; ----------------------------------------------------------------------
+; 02B2 – LEVEL II BASIC SYSTEM ROUTINE – “SYSTEM”
+; ----------------------------------------------------------------------
 SYSTEM:	call	SYSOUT		;02b2
-;
-; This location passes control to the routine used by the BASIC command SYSTEM
-;
 	ld	sp,MEMEND+$88	;02b5
 	call	CRDO		;02b8
 	ld	a,'*'		;02bb
@@ -1737,7 +1735,7 @@ FADDS:	call	MOVRM		;070b
 FSUBS:	call	MOVRM		;0710
 ;
 ; ======================================================================
-; 0713H – SINGLE PRECISION SUBTRACTION - “FSUB”
+; 0713H – LEVEL II BASIC SINGLE PRECISION SUBTRACTION - “FSUB”
 ;
 ;   Subtracts the single precision value in (BC/DE) from the
 ;   single precision value in WRA1. The difference is left in WRA1.
@@ -1745,7 +1743,7 @@ FSUBS:	call	MOVRM		;0710
 FSUB:	call	NNEG		;0713
 ;
 ; ======================================================================
-; 0716H – SINGLE PRECISION ADDITION - “FADD”
+; 0716H – LEVEL II BASIC SINGLE PRECISION ADDITION - “FADD”
 ;
 ;   Add the single precision value in (BC/DE) to the single
 ;   precision value in WRA1. The sum is left in WRA1
@@ -1990,7 +1988,7 @@ MULLN2:	ld	bc,$8031	;0841
 ; fall into the MULTiplocation routine.
 ;
 ; ======================================================================
-; 0847H – SINGLE PRECISION MULTIPLICATION, – “FMULT”
+; 0847H – LEVEL II BASIC SINGLE PRECISION MULTIPLICATION, – “FMULT”
 ;
 ;   Single-precision multiplication (ACCumulator=BCDE*ACC or ACC = ARG * FAC)).
 ;   Multiplies the current value in the ACCumulator by the value in (BC/DE).
@@ -2067,7 +2065,7 @@ DIV10:	call	PUSHF		;0897
 FDIVT:	pop	bc		;08a0
 	pop	de		;08a1
 ; ----------------------------------------------------------------------
-; 08A2H-0903H – SINGLE PRECISION DIVISION – “FDIV”
+; 08A2H-0903H – LEVEL II BASIC SINGLE PRECISION DIVISION – “FDIV”
 ;   Single-precision division (ACCumulator=BCDE/ACCumulator or
 ;   ACC = ARG / ACC). If ACCumulator=0 a ” /0 ERROR ” will result.
 ; ----------------------------------------------------------------------
@@ -2268,7 +2266,7 @@ CONIA:	ld	l,a		;098d
 	jp	MAKINT		;0991
 ;
 ; ----------------------------------------------------------------------
-; 0994H-09A3H – LEVEL II BASIC MATH ROUTINE – “VSIGN”
+; 0994H-09A3H – MATH ROUTINE – “VSIGN”
 ;   This routine checks the sign of the ACCumulator. NTF must be set.
 ;   After execution A register=00 if ACCumulator=0, A=01 if ACC > 0
 ;   or A=FFH if A < 1. The Flags are also valid.
@@ -2364,13 +2362,13 @@ UNPACK:	ld	hl,FAC-1	;09df
 	xor	(hl)		;09f2
 	ret			;09f3
 ; ----------------------------------------------------------------------
-; 09F4H-09FBH – LEVEL II BASIC MATH ROUTINE – “VMOVFA”
+; 09F4H-09FBH – MATH ROUTINE – “VMOVFA”
 ; ----------------------------------------------------------------------
 VMOVFA:	ld	hl,ARGLO	;09f4
 VMOVFM:	ld	de,MOVVFM	;09f7
 	jr	VMOVMF		;09fa
 ; ----------------------------------------------------------------------
-; 09FCH-0A0BH – LEVEL II BASIC MATH ROUTINE – “VMOVAF”
+; 09FCH-0A0BH – MATH ROUTINE – “VMOVAF”
 ;   This is the opposite of 9F4H. This routine moves a number of bytes
 ;   (the number depending on the value stored in the VALTYPE) from the
 ;   ACCumulator to (HL). All Registers except C are affected.
@@ -2385,7 +2383,7 @@ VDFACS:	ld	de,FACLO	;0a03
 	ret			;0a0b
 ;
 ; ======================================================================
-; 0A0CH – SINGLE PRECISION COMPARE – “FCOMP”
+; 0A0CH – LEVEL II BASIC SINGLE PRECISION COMPARE – “FCOMP”
 ;
 ;   This routine will compare two single precision numbers.
 ;   On Exit, A=1 if ARG < ACCumulator, A=0 if ARG=Accmulator,
@@ -2409,7 +2407,7 @@ FCOMPD:	rra			;0a23
 	xor	c		;0a24
 	ret			;0a25
 ; ----------------------------------------------------------------------
-; 0A26H-0A38H – Part of the SINGLE PRECISION COMPARISON ROUTINE – “FCOMP2”
+; 0A26H-0A38H – Part of the single precision comparison routine – “FCOMP2”
 ; ----------------------------------------------------------------------
 FCOMP2:	inc	hl		;0a26
 	ld	a,b		;0a27
@@ -2432,7 +2430,7 @@ FCOMP2:	inc	hl		;0a26
 	ret			;0a38
 ;
 ; ======================================================================
-; 0A39H – INTEGER COMPARISON ROUTINE – “ICOMP”
+; 0A39H – LEVEL II BASIC INTEGER COMPARISON ROUTINE – “ICOMP”
 ;
 ;   Integer compare. Compares HL with DE. After execution, A=0 if HL=DE,
 ;   A=1 if HL>DE or A=FFH if HL<DE. The S and Z flags are valid.
@@ -2485,7 +2483,7 @@ DCOMP1:	ld	a,(de)		;0a6c
 	ret			;0a77
 ;
 ; ======================================================================
-; 0A78H – DOUBLE PRECISION COMPARE – “DCOMP”
+; 0A78H – LEVEL II BASIC DOUBLE PRECISION COMPARE – “DCOMP”
 ;
 ;   this routine will compare
 ;   two double precision numbers, but is the opposite of the ICOMP, FCOMP,
@@ -2515,7 +2513,7 @@ FRCINT:	rst	20h		;0a7f
 	push	hl		;0a8d
 ;
 ; ----------------------------------------------------------------------
-; 0A8EH – LEVEL II BASIC CONVERSION ROUTINE – “CONIS”
+; 0A8EH – MATH CONVERSION ROUTINE – “CONIS”
 ; ----------------------------------------------------------------------
 CONIS:	ld	a,(FAC)		;0a8e
 	cp	$90		;0a91
@@ -2530,7 +2528,7 @@ MAKINT:	ld	(FACLO),hl	;0a9a
 CONISD:	ld	(VALTYP),a	;0a9f
 	ret			;0aa2
 ; ----------------------------------------------------------------------
-; 0AA3H – LEVEL II BASIC CONVERSION ROUTINE – “CONIS2”
+; 0AA3H – MATH CONVERSION ROUTINE – “CONIS2”
 ;   This routine’s purpose is to check to see if a number from the FIN routine is -32768.
 ; ----------------------------------------------------------------------
 CONIS2:	ld	bc,$9080	;0aa3
@@ -2553,7 +2551,7 @@ FRCSNG:	rst	20h		;0ab1
 	jp	z,TMERR		;0ab6
 ;
 ; ----------------------------------------------------------------------
-; 0AB9 – LEVEL II BASIC NUMBER CONVERSION ROUTINE – “CONSD”
+; 0AB9 – MATH CONVERSION ROUTINE – “CONSD”
 ;  Convert a double-prevision number to single-precision.
 ;  Every register is affected.
 ; ----------------------------------------------------------------------
@@ -2568,7 +2566,7 @@ CONSD:	call	MOVRF		;0ab9
 	jp	ROUND		;0ac9
 ;
 ; ----------------------------------------------------------------------
-; 0ACCH-0ADAH -LEVEL II BASIC NUMBER CONVERSION ROUTINE – “CONSI”
+; 0ACCH-0ADAH - MATH CONVERSION ROUTINE – “CONSI”
 ;   Convert Integer to Single Precision. Every register is affected.
 ; ----------------------------------------------------------------------
 CONSI:	ld	hl,(FACLO)	;0acc
@@ -2601,7 +2599,7 @@ CONDS:	ld	hl,$0000	;0ae3
 VALDBL:	ld	a,$08		;0aec
 ;
 ; ----------------------------------------------------------------------
-; 0AEEH-0AF3H – LEVEL II BASIC MATH ROUTINE – “VALSNG”
+; 0AEEH-0AF3H – MATH ROUTINE – “VALSNG”
 ; ----------------------------------------------------------------------
 ;
 	.DB	LDBCNN		;0aee - Z80 Trick LD BC,nnnn - skip next 2 byte instruction
@@ -2610,7 +2608,7 @@ VALSNG:	ld	a,$04		;0aef - single precision number type flag (of 4)
 	jp	CONISD		;0af1
 ;
 ; ----------------------------------------------------------------------
-; 0AF4H-0AFAH – LEVEL II BASIC MATH ROUTINE – “CHKSTR”
+; 0AF4H-0AFAH – LEVEL II BASIC STRING CONVERSION ROUTINE – “CHKSTR”
 ;   This routine will force the ACCUmlator to be a STRING. Only Register A is modified.
 ; ----------------------------------------------------------------------
 CHKSTR:	rst	20h		;0af4
@@ -2623,7 +2621,7 @@ TMERR:	ld	e,ERRTM		;0af6
 	jp	ERROR		;0af8
 ;
 ; ----------------------------------------------------------------------
-; 0AFBH-0B1EH – LEVEL II BASIC MATH ROUTINE – “QINT”
+; 0AFBH-0B1EH – MATH ROUTINE – “QINT”
 ;   This routine is a quick “Greatest Integer” function. Registers A-E are affected.
 ;   The result of INT(ACCumulator) is left in C/D/E as a signed number
 ; ----------------------------------------------------------------------
@@ -2650,7 +2648,7 @@ QINT:	ld	b,a		;0afb
 	pop	hl		;0b1d
 	ret			;0b1e
 ; ----------------------------------------------------------------------
-; 0B1FH-0B25H – LEVEL II BASIC MATH ROUTINE – “QINTA”
+; 0B1FH-0B25H – MATH ROUTINE – “QINTA”
 ; ----------------------------------------------------------------------
 QINTA:	dec	de		;0b1f
 	ld	a,d		;0b20
@@ -2705,7 +2703,7 @@ IINT:	ld	hl,FAC		;0b40
 	ret			;0b58
 ;
 ; ----------------------------------------------------------------------
-; 0B59H-0B9DH – LEVEL II BASIC MATH ROUTINE – “DINT”
+; 0B59H-0B9DH – MATH ROUTINE – “DINT”
 ;   Greated Integer function for double-precision numbers.
 ;   All registers are affected.
 ; ----------------------------------------------------------------------
@@ -2750,7 +2748,7 @@ DINTFO:	push	af		;0b7b
 	jp	DNORML		;0b9d
 ;
 ; ----------------------------------------------------------------------
-; 0BA0H-0BA9H – LEVEL II BASIC MATH ROUTINE – “DINTA”
+; 0BA0H-0BA9H – MATH ROUTINE – “DINTA”
 ; ----------------------------------------------------------------------
 DINTA:	ld	hl,DFACLO	;0ba0
 DINTA1:	ld	a,(hl)		;0ba3
@@ -2760,7 +2758,7 @@ DINTA1:	ld	a,(hl)		;0ba3
 	jr	z,DINTA1	;0ba7
 	ret			;0ba9
 ; ----------------------------------------------------------------------
-; 0BAAH-0BC6H – LEVEL II BASIC MATH ROUTINE – “UMULT”
+; 0BAAH-0BC6H – MATH ROUTINE – “UMULT”
 ;   This is the integer multiply routine for multiplying dimensioned
 ;   array. It will calculate DE = BC * DE. If there is an overflow,
 ;   a ?BS ERROR will get thrown. Every register except HL is affected.
@@ -2786,7 +2784,7 @@ MULRET:	ex	de,hl		;0bc4
 	ret			;0bc6
 ;
 ; ======================================================================
-; 0BC7H – INTEGER SUBTRACTION – “ISUB”
+; 0BC7H – LEVEL II BASIC INTEGER SUBTRACTION – “ISUB”
 ;
 ;   Integer subtract. (ACCumulator=DE-HL) The result is returned in both
 ;   ACCumulator and, if there was no overflow, the HL Register Pair.
@@ -2801,7 +2799,7 @@ ISUB:	ld	a,h		;0bc7
 	jr	IADDS		;0bd0
 ;
 ; ======================================================================
-; 0BD2H – INTEGER ADDITION – “IADD”
+; 0BD2H – LEVEL II BASIC INTEGER ADDITION – “IADD”
 ;
 ;   Integer addition (ACCumulator=DE+HL), where ACCumulator = 4121H-4122H.
 ;   After execution NTF=2, or 4 if overflow has occurred, in which case
@@ -2832,7 +2830,7 @@ IADDS:	ld	b,a		;0bd5
 	jp	FADDT		;0bef
 ;
 ; ======================================================================
-; 0BF2H – INTEGER MULTIPLICATION – “IMULT”
+; 0BF2H – LEVEL II BASIC INTEGER MULTIPLICATION – “IMULT”
 ;
 ;   Integer multiply. (ACCumulator (and HL) =DE*HL). Multiplies HL by DE.
 ;   The product is left in HL and DE is preserved. If overflow occurs,
@@ -2869,7 +2867,7 @@ IMULT2:	dec	a		;0c10
 	ld	a,b		;0c1b
 	jp	INEGA		;0c1c
 ; ----------------------------------------------------------------------
-; 0C1FH-0C34H – LEVEL II BASIC MATH ROUTINE – “IMULT3”
+; 0C1FH-0C34H – MATH ROUTINE – “IMULT3”
 ; ----------------------------------------------------------------------
 IMULT3:	xor	$80		;0c1f
 	or	l		;0c21
@@ -2888,7 +2886,7 @@ FMULTT:	pop	bc		;0c32
 	pop	de		;0c33
 	jp	FMULT		;0c34
 ; ----------------------------------------------------------------------
-; 0C37H-0C44H – LEVEL II BASIC MATH ROUTINE – “IMULT4”
+; 0C37H-0C44H – MATH ROUTINE – “IMULT4”
 ; ----------------------------------------------------------------------
 IMULT4:	ld	a,b		;0c37
 	or	a		;0c38
@@ -2899,7 +2897,7 @@ IMULT4:	ld	a,b		;0c37
 	pop	de		;0c41
 	jp	NNEG		;0c42
 ; ----------------------------------------------------------------------
-; 0C45H-0C5AH – LEVEL II BASIC MATH ROUTINE – “IMULDV”
+; 0C45H-0C5AH – MATH ROUTINE – “IMULDV”
 ;   This is the integer division routine HL = DE / HL. The remainder will be
 ;   in DE and the quotient will be left in HL. Every register is affected.
 ; ----------------------------------------------------------------------
@@ -2925,7 +2923,7 @@ INEGHL:	xor	a		;0c51
 	ld	h,a		;0c57
 	jp	MAKINT		;0c58
 ; ----------------------------------------------------------------------
-; 0C5BH-0C6FH – LEVEL II BASIC MATH ROUTINE – “INEG”
+; 0C5BH-0C6FH – MATH ROUTINE – “INEG”
 ;   Integer Negation Routine. All registers are altered.
 ; ----------------------------------------------------------------------
 INEG:	ld	hl,(FACLO)	;0c5b
@@ -2941,7 +2939,7 @@ INEGAD:	ld	b,$98		;0c6b
 	jp	FLOATR		;0c6d
 ;
 ; ======================================================================
-; 0C70H – DOUBLE PRECISION SUBTRACTION – “DSUB”
+; 0C70H – LEVEL II BASIC DOUBLE PRECISION SUBTRACTION – “DSUB”
 
 ;   Double-precision subtraction (ACCumulator = ACCumulator – ARG).
 ;   Subtracts the double precision value in ARG (a/k/a REG 2)
@@ -2953,7 +2951,7 @@ DSUB:	ld	hl,ARG-1	;0c70
 	ld	(hl),a		;0c76
 ;
 ; ======================================================================
-; 0C77H - DOUBLE PRECISION ADDITION – “DADD”
+; 0C77H - LEVEL II BASIC DOUBLE PRECISION ADDITION – “DADD”
 ;
 ;   Double-precision addition (ACCumulator=ACCumulator+ARG (a/k/a REG 2)).
 ;   Adds the double precision value in ARG (a/k/a REG 2) to the value
@@ -3198,7 +3196,7 @@ DSHFTL:	ld	a,(hl)		;0d99
 	ret			;0da0
 ;
 ; ======================================================================
-; 0DA1H – DOUBLE PRECISION MULTIPLICATION – “DMULT”
+; 0DA1H – LEVEL II BASIC DOUBLE PRECISION MULTIPLICATION – “DMULT”
 ;
 ;   Double-precision multiplication (ACCumulator=ACC*ARG (a/k/a REG 2)).
 ;   Multiplies the double precision value in the ACCumulator by the value
@@ -3255,7 +3253,7 @@ DDIV10:	ld	de,DTEN		;0ddc
 	call	VMOVE		;0de2
 ;
 ; ======================================================================
-; 0DE5H – DOUBLE PRECISION DIVISION – “DDIV”
+; 0DE5H – LEVEL II BASIC DOUBLE PRECISION DIVISION – “DDIV”
 ;
 ;   Divides the double precision value in the ACCumulator by the value in
 ;   ARG (a/k/a REG 2). The quotient is left in the ACCumulator.
@@ -3324,7 +3322,7 @@ DMLDV1:	ld	a,(hl)		;0e44
 	jr	nz,DMLDV1	;0e4a
 	ret			;0e4c
 ; ----------------------------------------------------------------------
-; 0E4DH-0E64H – LEVEL II BASIC MATH ROUTINE – “DMUL10”
+; 0E4DH-0E64H – MATH ROUTINE – “DMUL10”
 ;   This routine multiplies the current double-precision value by 10 by
 ;   adding it to itself. First the current value is moved to a saved
 ;   location, and then DP add routine adds the current value to that
@@ -3442,7 +3440,7 @@ FINE2:	call	p,FINMUL	;0eca
 	call	CONIS2		;0ee0
 	ret			;0ee3
 ; ----------------------------------------------------------------------
-; 0EE4 – Math Routine – “FINDP”
+; 0EE4 – MATH ROUTINE – “FINDP”
 ;   This routine checks to see if we have seen TWO decimal points and to set
 ;   the decimal point flag. We jumped here when we found a single decimal point.
 ; ----------------------------------------------------------------------
@@ -3452,7 +3450,7 @@ FINDP:	rst	20h		;0ee4
 	call	c,FINFRC	;0ee8
 	jp	FINC		;0eeb
 ; ----------------------------------------------------------------------
-; 0EEE – Math Routine – “FININT”
+; 0EEE – MATH ROUTINE – “FININT”
 ; ----------------------------------------------------------------------
 FININT:	rst	20h		;0eee
 	jp	p,SNERR		;0eef
@@ -3462,7 +3460,7 @@ FINDBF:	or	a		;0ef5
 FINSNF:	call	FINFRC		;0ef6
 	jr	INFINE		;0ef9
 ; ----------------------------------------------------------------------
-; 0EFB – Math Routine – “FINFRC”
+; 0EFB – MATH ROUTINE – “FINFRC”
 ;   This routine will force the ACCumulator to be either single precision
 ;   or double precision based on the Z FLAG. Z FLAG = Force to single precision;
 ;   NZ FLAG = Force to double precision.
@@ -3479,7 +3477,7 @@ FINFRC:	push	hl		;0efb
 	pop	hl		;0f08
 	ret			;0f09
 ; ----------------------------------------------------------------------
-; 0EE4 – Math Routine – “FINMUL” and “FINMLT”
+; 0EE4 – MATH ROUTINE – “FINMUL” and “FINMLT”
 ;   This subroutine multiplies a number by 10 once. The reason this is a
 ;   subroutine is that it can also double as a check to see if A is ZERO,
 ;   thus saving bytes. All registers are affected.
@@ -3495,7 +3493,7 @@ FINMLT:	push	af		;0f0b
 DCRART:	dec	a		;0f16
 	ret			;0f17
 ; ----------------------------------------------------------------------
-; 0F18 – Math Routine – “FINDIV”
+; 0F18 – MATH ROUTINE – “FINDIV”
 ;   This subroutine divides a number by 10 once. FIN and FOUT use this
 ;   routine. Registers A, B, and C are affected.
 ; ----------------------------------------------------------------------
@@ -3513,7 +3511,7 @@ FINDIV:	push	de		;0f18
 	inc	a		;0f27
 	ret			;0f28
 ; ----------------------------------------------------------------------
-; 0F29 – Math Routine – “FINDIG”
+; 0F29 – MATH ROUTINE – “FINDIG”
 ;   This routine will pack the next digit of the number into the ACCumulator.
 ;   To do this, the ACCumulator is multipled by ten to shift everything
 ;   over and make room for the digit, and then the digit is added in.
@@ -3551,19 +3549,19 @@ FINDGE:	pop	hl		;0f51
 	pop	de		;0f53
 	jp	FINC		;0f54
 ; ----------------------------------------------------------------------
-; 0F57 – Math Routine – “FINDG1”
+; 0F57 – MATH ROUTINE – “FINDG1”
 ;   This routine handles 32768 and 32769
 ; ----------------------------------------------------------------------
 FINDG1:	ld	a,c		;0f57
 	push	af		;0f58
 ; ----------------------------------------------------------------------
-; 0F59 – Math Routine – “FINDG2”
+; 0F59 – MATH ROUTINE – “FINDG2”
 ;   Convert integer digits into single precision digits
 ; ----------------------------------------------------------------------
 FINDG2:	call	CONSI		;0f59
 	scf			;0f5c
 ; ----------------------------------------------------------------------
-; 0F5D – Math Routine – “FINDGV”
+; 0F5D – MATH ROUTINE – “FINDGV”
 ;   Determine if we have a single precision or a double prevision number
 ; ----------------------------------------------------------------------
 FINDGV:	jr	nc,FINDGD	;0f5d
@@ -3576,7 +3574,7 @@ FINDGV:	jr	nc,FINDGD	;0f5d
 	call	FINLOG		;0f6f
 	jr	FINDGE		;0f72
 ; ----------------------------------------------------------------------
-; 0F74 – Math Routine – “FINDG3” and “FINDGD”
+; 0F74 – MATH ROUTINE – “FINDG3” and “FINDGD”
 ;   The routine will convert a 7 digit single precision number
 ;   into a double precision number
 ; ----------------------------------------------------------------------
@@ -3598,7 +3596,7 @@ FADDT:	pop	bc		;0f8f
 	pop	de		;0f90
 	jp	FADD		;0f91
 ; ----------------------------------------------------------------------
-; 0F94H-0FA6H – LEVEL II BASIC MATH ROUTINE – “FINEDG”
+; 0F94H-0FA6H – MATH ROUTINE – “FINEDG”
 ;   Pack in a digit of the exponent. This is done by multiplying the
 ;   old exponent by 10 and then adding in the desired digit.
 ;   Note: This routine does NOT check for overflow.
@@ -3727,7 +3725,7 @@ FOTZS3:	ld	a,e		;102d
 	ld	(hl),b		;1032
 	ret			;1033
 ; ----------------------------------------------------------------------
-; 1034 – LEVEL II BASIC MATH ROUTINE – “FOUINI”
+; 1034 – MATH ROUTINE – “FOUINI”
 ;   Initially set up the format specs and put in a SPACE for the sign
 ;   of a positive number. This routine gets called by the FLOATING
 ;   to ASCII Conversion Routine (at 0FBEH) and by the BINARY to ASCII
@@ -3738,7 +3736,7 @@ FOUINI:	ld	(TEMP3),a	;1034
 	ld	(hl),SPACE	;103a
 	ret			;103c
 ; ----------------------------------------------------------------------
-; 103D – LEVEL II BASIC MATH ROUTINE – “FOUFRV”
+; 103D – MATH ROUTINE – “FOUFRV”
 ;   This routine gets called by the FLOATING to ASCII Conversion Routine
 ;   (0FBEH-0FC0H) if the value being converted is either Single Precision
 ;   or Double Precision. This will print a single or double precision
@@ -3776,7 +3774,7 @@ FOFRS2:	dec	hl		;1066
 	pop	af		;1071
 	jr	z,FOUTDN	;1072
 ; ----------------------------------------------------------------------
-; 1074 – LEVEL II BASIC MATH ROUTINE – “FOFLDN”
+; 1074 – MATH ROUTINE – “FOFLDN”
 ;   This routine will put the exponent and a D or E into the buffer.
 ;   On entry, Register A holds the exponent and it is assumed that
 ;   all FLAGs are set correctly.
@@ -3794,7 +3792,7 @@ FOFLDN:	push	af		;1074
 	cpl			;1083
 	inc	a		;1084
 ; ----------------------------------------------------------------------
-; 1085 – LEVEL II BASIC MATH ROUTINE – “FOUCE1” and “FOUCE2”
+; 1085 – MATH ROUTINE – “FOUCE1” and “FOUCE2”
 ; ----------------------------------------------------------------------
 FOUCE1:	ld	b,$2F		;1085
 FOUCE2:	inc	b		;1087
@@ -3807,7 +3805,7 @@ FOUCE2:	inc	b		;1087
 	ld	(hl),a		;1091
 FOUTZR:	inc	hl		;1092
 ; ----------------------------------------------------------------------
-; 1093 – LEVEL II BASIC MATH ROUTINE – “FOUTDN”
+; 1093 – MATH ROUTINE – “FOUTDN”
 ;   This routine will print a free format zero.
 ; ----------------------------------------------------------------------
 FOUTDN:	ld	(hl),$00	;1093
@@ -3815,7 +3813,7 @@ FOUTDN:	ld	(hl),$00	;1093
 	ld	hl,FBUFFR	;1096
 	ret			;1099
 ; ----------------------------------------------------------------------
-; 109A- LEVEL II BASIC MATH ROUTINE – “FOUTFX”
+; 109A- MATH ROUTINE – “FOUTFX”
 ;   This routine will print a number in fixed format.
 ; ----------------------------------------------------------------------
 FOUTFX:	inc	hl		;109a
@@ -3838,7 +3836,7 @@ FOUTTD:	ld	a,e		;10b6
 	dec	a		;10bb
 	call	p,FOTZER	;10bc
 ; ----------------------------------------------------------------------
-; 10BF – LEVEL II BASIC MATH ROUTINE – “FOUTTS”
+; 10BF – MATH ROUTINE – “FOUTTS”
 ;   This routine will finish up the printing of a fixed format number.
 ; ----------------------------------------------------------------------
 FOUTTS:	push	hl		;10bf
@@ -3862,7 +3860,7 @@ FOUBE5:	ld	a,(TEMP2)	;10ce
 	dec	hl		;10dd
 	push	hl		;10de
 ; ----------------------------------------------------------------------
-; 10DF – LEVEL II BASIC MATH ROUTINE – “FOUBE2”
+; 10DF – MATH ROUTINE – “FOUBE2”
 ;   In this routine, we check to see if we can ignore the leading zero
 ;   before a decimal point.
 ;   If we see a leading zero, it must be the one before a decimal point
@@ -3891,7 +3889,7 @@ FOUBE2:	push	af		;10df
 	.DB	LDBCNN		;10f8 Z80 Trick - LD BC,nnnn - skip next 2 instructions
 ;
 ; ----------------------------------------------------------------------
-; 10F9 – LEVEL II BASIC MATH ROUTINE – “FOUBE3”
+; 10F9 – MATH ROUTINE – “FOUBE3”
 ;   If we can get rid of the zero, we put the characters on the STACK
 ;   back into the buffer one position in front of where they originally were.
 ;   Note that the maximum number of STACK levels this uses is three — one
@@ -3906,7 +3904,7 @@ FOUBE3:	dec	hl		;10f9
 	pop	bc		;10fe
 	jp	FOUBE5		;10ff
 ; ----------------------------------------------------------------------
-; 1102 – LEVEL II BASIC MATH ROUTINE – “FOUBE4”
+; 1102 – MATH ROUTINE – “FOUBE4”
 ;   If the number is too big for the field, we wind up here to deal with that.
 ; ----------------------------------------------------------------------
 FOUBE4:	pop	af		;1102
@@ -3915,7 +3913,7 @@ FOUBE4:	pop	af		;1102
 	ld	(hl),'%'	;1106
 	ret			;1108
 ; ----------------------------------------------------------------------
-; 1109 – LEVEL II BASIC MATH ROUTINE – “FOUFXV”
+; 1109 – MATH ROUTINE – “FOUFXV”
 ;   This is where the PRINT USING routine will print a single
 ;   or double precision number in a fixed format
 ; ----------------------------------------------------------------------
@@ -3928,7 +3926,7 @@ FOUFXV:	push	hl		;1109
 	ld	d,$10		;1116
 	jp	m,FFXSDC	;1118
 ; ----------------------------------------------------------------------
-; 111B – LEVEL II BASIC MATH ROUTINE – “FFXSDO”
+; 111B – MATH ROUTINE – “FFXSDO”
 ;   This routine will print a number which is greaster than 10^16
 ;   in free format with a percent sign
 ; ----------------------------------------------------------------------
@@ -3939,7 +3937,7 @@ FFXSDO:	pop	hl		;111b
 	ld	(hl),'%'	;1121
 	ret			;1123
 ; ----------------------------------------------------------------------
-; 1124 – LEVEL II BASIC MATH ROUTINE – “FFXSFX”
+; 1124 – MATH ROUTINE – “FFXSFX”
 ;   This routine will print a SINGLE PRECISION number in fixed format/fixed point notation
 ; ----------------------------------------------------------------------
 FFXSFX:	ld	bc,$B60E	;1124 - Load Register Pair BC/DE with 1e16
@@ -3948,7 +3946,7 @@ FFXSFX:	ld	bc,$B60E	;1124 - Load Register Pair BC/DE with 1e16
 	jp	p,FFXSDO	;112d
 	ld	d,$06		;1130
 ; ----------------------------------------------------------------------
-; 1124 – LEVEL II BASIC MATH ROUTINE – “FFXSDC”
+; 1124 – MATH ROUTINE – “FFXSDC”
 ;   This routine will print a SINGLE or DOUBLE number in fixed format/point notation
 ; ----------------------------------------------------------------------
 FFXSDC:	call	SIGN		;1132
@@ -3971,7 +3969,7 @@ FFXSDC:	call	SIGN		;1132
 	pop	de		;1153
 	jp	FOUTTD		;1154
 ; ----------------------------------------------------------------------
-; 1157 – LEVEL II BASIC MATH ROUTINE – “FFXXVS”
+; 1157 – MATH ROUTINE – “FFXXVS”
 ;   This routine will print a SINGLE or DOUBLE number that has fractional digits
 ; ----------------------------------------------------------------------
 FFXXVS:	ld	e,a		;1157
@@ -4000,7 +3998,7 @@ FFXXV2:	call	m,FINDIV	;1164
 	call	FOUTCD		;117a
 	jr	FFXXV6		;117d
 ; ----------------------------------------------------------------------
-; 117F – LEVEL II BASIC MATH ROUTINE – “FFXXV3”
+; 117F – MATH ROUTINE – “FFXXV3”
 ; ----------------------------------------------------------------------
 FFXXV3:	call	FOTZER		;117f
 	ld	a,c		;1182
@@ -4019,7 +4017,7 @@ FFXXV6:	call	FOUTCV		;1190
 	jr	nz,FFXXV7	;1195
 	ld	hl,(TEMP2)	;1197
 ; ----------------------------------------------------------------------
-; 119A – LEVEL II BASIC MATH ROUTINE – “FFXXV7”
+; 119A – MATH ROUTINE – “FFXXV7”
 ;   This routine will print trailing zeroes.
 ; ----------------------------------------------------------------------
 FFXXV7:	add	a,e		;119a
@@ -4028,7 +4026,7 @@ FFXXV7:	add	a,e		;119a
 	ld	d,b		;119f
 	jp	FOUTTS		;11a0
 ; ----------------------------------------------------------------------
-; 11A3 – LEVEL II BASIC MATH ROUTINE – “FFXIFL”
+; 11A3 – MATH ROUTINE – “FFXIFL”
 ;   This routine will print an integer in fixed format/floating point notation.
 ; ----------------------------------------------------------------------
 FFXIFL:	push	hl		;11a3
@@ -4037,7 +4035,7 @@ FFXIFL:	push	hl		;11a3
 	pop	de		;11a8
 	xor	a		;11a9
 ; ----------------------------------------------------------------------
-; 11AA – LEVEL II BASIC MATH ROUTINE – “FFXFLV”
+; 11AA – MATH ROUTINE – “FFXFLV”
 ;   This routine will print a SINGLE or DOUBLE PRECISION number in
 ;   fixed format/floating point notation.
 ; ----------------------------------------------------------------------
@@ -4121,7 +4119,7 @@ FORBIG:	ld	a,(FAC)		;1208
 	push	af		;121f
 	jr	FORBIG		;1220
 ; ----------------------------------------------------------------------
-; 1222 – LEVEL II BASIC MATH ROUTINE – “FOUNDB”
+; 1222 – MATH ROUTINE – “FOUNDB”
 ; ----------------------------------------------------------------------
 FOUNDB:	call	FOUNVC		;1222
 FOUNDV1: rst	20h		;1225
@@ -4153,7 +4151,7 @@ FOUNDV3: pop	af		;124b
 ;
 	ret			;124e
 ; ----------------------------------------------------------------------
-; 124F – LEVEL II BASIC MATH ROUTINE – “FOUNVC”
+; 124F – MATH ROUTINE – “FOUNVC”
 ;   This routine will see if the number in the ACCumulator is small enough yet
 ; ----------------------------------------------------------------------
 FOUNVC:	rst	20h		;124f
@@ -4168,7 +4166,7 @@ FONVC2:	pop	hl		;1264
 	jp	p,FOUNDVV	;1265
 	jp	(hl)		;1268
 ; ----------------------------------------------------------------------
-; 1269H – LEVEL II BASIC MATH ROUTINE – “FOTZER”
+; 1269H – MATH ROUTINE – “FOTZER”
 ;   This routine puts leading zeroes into the input buffer. The count is held in A
 ;   and it can be zero, but the Z FLAG needs to be set in that case.
 ;   Only (HL) and Register A are affected.
@@ -4180,7 +4178,7 @@ FOTZR1:	ret	z		;126a
 	inc	hl		;126e
 	jr	FOTZR1		;126f
 ; ----------------------------------------------------------------------
-; 1271 – LEVEL II BASIC MATH ROUTINE – “FOTZNC”
+; 1271 – MATH ROUTINE – “FOTZNC”
 ;   This routine will put zeroes in the buffer along with commans or a decimal
 ;   point in the middle.
 ; ----------------------------------------------------------------------
@@ -4192,7 +4190,7 @@ FOTZEC:	ld	(hl),$30	;1277
 	dec	a		;127a
 	jr	FOTZRC		;127b
 ; ----------------------------------------------------------------------
-; 127D – LEVEL II BASIC MATH ROUTINE – “FOUTCD”
+; 127D – MATH ROUTINE – “FOUTCD”
 ;    This routine will put a possible comma count into Register C and will
 ;    zero Register C if we are not using commas in the specification.
 ; ----------------------------------------------------------------------
@@ -4211,7 +4209,7 @@ FOUICC:	ld	a,(TEMP3)	;1289
 	ld	c,a		;128f
 	ret			;1290
 ; ----------------------------------------------------------------------
-; 1291 – LEVEL II BASIC MATH ROUTINE – “FOUTED”
+; 1291 – MATH ROUTINE – “FOUTED”
 ;   This routine will put decimal points and commas in their correct places.
 ;   This subroutine should be called before the next digit is put in the buffer.
 ;   Register B = the decimal point count and Register C = the comma count.
@@ -4224,7 +4222,7 @@ FOUTDP:	ld	(hl),'.'	;1294
 	ld	c,b		;129a
 	ret			;129b
 ; ----------------------------------------------------------------------
-; 129C – LEVEL II BASIC MATH ROUTINE – “FOUED1”
+; 129C – MATH ROUTINE – “FOUED1”
 ;   Part of the above routine, jumped here to test to see if a comma needs
 ;   to be placed at (HL).
 ; ----------------------------------------------------------------------
@@ -4235,7 +4233,7 @@ FOUED1:	dec	c		;129c
 	ld	c,$03		;12a1
 	ret			;12a3
 ; ----------------------------------------------------------------------
-; 12A4 – LEVEL II BASIC MATH ROUTINE – “FOUTCV”
+; 12A4 – MATH ROUTINE – “FOUTCV”
 ;   This routine will convert a SINGLE or a DOUBLE PRECISION number
 ;   that has been normalized to decimal digits.
 ; ----------------------------------------------------------------------
@@ -4281,7 +4279,7 @@ FOUCD2:	inc	b		;12cb
 	call	MOVFM		;12e5
 	jr	FOUCDC		;12e8
 ; ----------------------------------------------------------------------
-; 12EA – LEVEL II BASIC MATH ROUTINE – “FOUTCS”
+; 12EA – MATH CONVERSION ROUTINE – “FOUTCS”
 ; This routine is to convert a SINGLE precision value to an INTEGER which will be the decimal digits.
 ; ----------------------------------------------------------------------
 FOUTCS:	push	bc		;12ea
@@ -4295,7 +4293,7 @@ FOUCDC:	pop	hl		;12f6
 	xor	a		;12f8
 	ld	de,FOSTBL	;12f9
 ; ----------------------------------------------------------------------
-; 12FC – LEVEL II BASIC MATH ROUTINE – “FOUCS1”
+; 12FC – MATH ROUTINE – “FOUCS1”
 ;   This routine is to calculate the next digit of the number.
 ; ----------------------------------------------------------------------
 FOUCS1:	ccf			;12fc
@@ -4308,7 +4306,7 @@ FOUCS1:	ccf			;12fc
 	pop	hl		;1307
 	ld	b,$2F		;1308
 ; ----------------------------------------------------------------------
-; 130A – LEVEL II BASIC MATH ROUTINE – “FOUCS2”
+; 130A – MATH ROUTINE – “FOUCS2”
 ;   This routine divides the integer portion of the current value
 ;   by 100,000 using compound subtraction.
 ; ----------------------------------------------------------------------
@@ -4456,7 +4454,7 @@ FOITBL:	.DB	$10, $27	; 10,000
 	.DB	$01, $00	; 1
 ;
 ; ----------------------------------------------------------------------
-; 13E2-13E6 – LEVEL II BASIC MATH ROUTINE – “PSHNEG”
+; 13E2-13E6 – MATH ROUTINE – “PSHNEG”
 ; ----------------------------------------------------------------------
 PSHNEG:	ld	HL,NNEG		; address of the routine for conversion of floating point numbers from negative to positive
 	ex	(sp),hl		;13e5
@@ -4576,7 +4574,7 @@ EXPCON:	.DB	$08		; number of constants which follow
 	.DB	$00, $00, $00, $81; constant equal to 1.0
 ;
 ; ----------------------------------------------------------------------
-; 149A-14C8 – LEVEL II BASIC MATH ROUTINE – “POLYX”
+; 149A-14C8 – MATH ROUTINE – “POLYX”
 ;   This is a general purpose summation routine which computes the series
 ;   C0*X+C1*X^3+C2*X^5+C3*X^7+…+C(N)*X^(2*N+1) for I=0 to N when entered
 ;   at 149AH If entered at 14A9H the series changes to
@@ -4591,7 +4589,7 @@ POLYX:	call	PUSHF		;149a
 	call	FMULT		;14a5
 	pop	hl		;14a8
 ; ----------------------------------------------------------------------
-; 14A9 – LEVEL II BASIC MATH ROUTINE – “POLY”
+; 14A9 – MATH ROUTINE – “POLY”
 ;   General polynomial evaluator routine. Pointer to degree+1 is in (HL),
 ;   and that gets updated through the computation. The Constants follow
 ;   the degree and should be stored in reverse order. The ACCumulator has
@@ -5120,21 +5118,21 @@ DBLDSP:
 ; 18B5-18BE - Single precision math
 ; ----------------------------------------------------------------------
 SNGDSP:
-	.DW	FADD
-	.DW	FSUB
-	.DW	FMULT
-	.DW	FDIV
-	.DW	FCOMP
+	.DW	FADD		; sp addition
+	.DW	FSUB		; sp sutraction
+	.DW	FMULT		; sp multiplication
+	.DW	FDIV		; sp division
+	.DW	FCOMP		; sp compare
 ;
 ; ----------------------------------------------------------------------
 ; 18BF-18C8 - Integer math
 ; ----------------------------------------------------------------------
 INTDSP:
-	.DW	IADD
-	.DW	ISUB
-	.DW	IMULT
-	.DW	INTDIV
-	.DW	ICOMP
+	.DW	IADD		; int addition
+	.DW	ISUB		; int sutraction
+	.DW	IMULT		; int multiplication
+	.DW	INTDIV		; int division
+	.DW	ICOMP		; int compare
 ;
 ; ----------------------------------------------------------------------
 ; 18C9-18F6 – STORAGE LOCATION FOR LEVEL II BASIC ERROR MESSAGES – "ERRTAB"
@@ -5939,7 +5937,7 @@ NOTOL:	ex	de,hl		;1cb5
 	jr	STPSGN		;1cea
 ;
 ; ----------------------------------------------------------------------
-; 1CECH – Part of the Level II BASIC FOR ROUTINE – “SNGFOR”
+; 1CECH – Part of the FOR routine – “SNGFOR”
 ; ----------------------------------------------------------------------
 SNGFOR:	call	FRCSNG		;1cec
 	call	MOVRF		;1cef
@@ -6081,7 +6079,7 @@ CNTCCN:	cp	$60		;1da0
 	dec	a		;1da8
 ;
 ; ----------------------------------------------------------------------
-; 1DA9-1DAD – STOP ROUTINE – “STOP”
+; 1DA9-1DAD – LEVEL II BASIC STOP ROUTINE – “STOP”
 ; ----------------------------------------------------------------------
 STOP:	ret	nz		;1da9
 	inc	a		;1daa
@@ -6547,7 +6545,7 @@ RESUME:	ld	de,ONEFLG	;1faf
 	jr	RESTXT		;1fcb
 ;
 ; ----------------------------------------------------------------------
-; 1FCDH - Part of the RESUME ROUTINE - "RESNXT"
+; 1FCDH - Part of the RESUME routine - "RESNXT"
 ; ----------------------------------------------------------------------
 RESNXT:	rst	10h		;1fcd
 	ret	nz		;1fce
@@ -7100,7 +7098,7 @@ NEXTC:	call	nz,PTRGET	;22b9
 	jr	FINNXT		;22e8
 ;
 ; ----------------------------------------------------------------------
-; 22EAH	–	“INTNXT” - Part of the NEXT code, where we process the variable as an int
+; 22EAH - Part of the NEXT code, process the variable as an int “INTNXT”
 ; ----------------------------------------------------------------------
 INTNXT:	inc	hl		;22ea
 	inc	hl		;22eb
@@ -7135,7 +7133,7 @@ INTNXT:	inc	hl		;22ea
 	ex	(sp),hl		;230f
 	call	ICOMP		;2310
 ; ----------------------------------------------------------------------
-; 2313H	–	“FINNXT” - Part of the NEXT code, jumped to continue after skipping over the int processing
+; 2313H	- Part of the NEXT code, continue after skipping over the int processing “FINNXT”
 ; ----------------------------------------------------------------------
 FINNXT:	pop	hl		;2313
 	pop	bc		;2314
@@ -7148,7 +7146,7 @@ FINNXT:	pop	hl		;2313
 	ld	h,b		;2320
 	jp	NXTCON		;2321
 ; ----------------------------------------------------------------------
-; 2324H	–	“LOOPDN” - Part of the NEXT code, jumped if we haven’t hit the TO counter yet
+; 2324H	– Part of the NEXT code, jumped if we haven’t hit the TO counter yet “LOOPDN”
 ; ----------------------------------------------------------------------
 LOOPDN:	ld	sp,hl		;2324
 	ld	(SAVSTK),hl	;2325
@@ -7425,7 +7423,7 @@ FACSNG:	pop	hl		;247c
 	jr	SNGDO		;248e
 ;
 ; ======================================================================
-; 2490 – Integer divide – “INTDIV”
+; 2490 – LEVEL II BASIC INTEGER DIVIDE – “INTDIV”
 ;
 ;   (ACC=DE / HL) Result will be in single-precision (NTF=4) in the ACC.
 ;    Divides DE by HL. Both values are converted to single precision before
@@ -7537,7 +7535,7 @@ DOMIN:	ld	d,$7D		;2532
 LABBCK:	pop	hl		;253e
 	ret			;253f
 ; ----------------------------------------------------------------------
-; 2540 – Math Routine – “ISVAR”
+; 2540 – MATH ROUTINE – “ISVAR”
 ; ----------------------------------------------------------------------
 ISVAR:	call	PTRGET		;2540
 RETVAR:	push	hl		;2543
@@ -8131,7 +8129,7 @@ USRFN:	call	USROUT		;27fe - dos usr n handling
 	ld	hl,(USRTAB)	;2815
 	jp	(hl)		;2818
 ; ----------------------------------------------------------------------
-; 2819-2827 – CONVERSION ROUTINE– “DOCNVF”
+; 2819-2827 – MATH CONVERSION ROUTINE– “DOCNVF”
 ;   Usually called by LET to convert the result of arithmetic
 ;   routines to the proper destination type.
 ; ----------------------------------------------------------------------
