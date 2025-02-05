@@ -4,9 +4,7 @@
 
 This repository contains reverse engineered source code for Tandy TRS-80 Model 1 Level 2 BASIC ROMS. 
 
-This source code has support for both V1.2, and V1.3 ROMS. 
-* Version 1.2 (late 1979) was a common version used in many computers
-* Version 1.3 (early 1980) was a large (relatively) release notable by the startup message "R/S L2 BASIC"
+This source code has support for both V1.2, and V1.3 of the ROMS. The version can be selected via the `#DEFINE VER13` code directive. For more information on the differences see the blog article
 
 ### Motivation
 
@@ -40,6 +38,7 @@ The source code is NOT the original code, it is a derivative work assembled from
 ### References
 
 Following References
+* [http://www.trs-80.org/model-1-level-2-basic-rom-versions/] - ROM Versions defined
 * [https://www.trs-80.com/wordpress/roms/] - Very good source code documentation
 * [https://gitlab.com/retroabandon/trs80i34-re] - The disassembly I based this work on.
 * [https://wikiti.brandonw.net/index.php?title=Z80_Optimization#Better_else] - Better Else
