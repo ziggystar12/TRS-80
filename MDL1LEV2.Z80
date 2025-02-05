@@ -45,62 +45,62 @@
 ; ----------------------------------------------------------------------
 ;   BASIC TOKENS IDS
 ; ----------------------------------------------------------------------
-TKFOR:		.EQU $81		; FOR
-TKDATA:		.EQU $88		; DATA
-TKGOTO:		.EQU $8D		; GOTO
-TKREM:		.EQU $93		; REM
-TKELSE:		.EQU $95		; ELSE
-TKPRNT:		.EQU $B2		; PRINT
-TKTAB:		.EQU $BC		; TAB(
-TKTO:		.EQU $BD		; TO
-TKFN:		.EQU $BE		; FN
-TKUSNG:		.EQU $BF		; USING
-TKVARP:		.EQU $C0		; VARPTR
-TKUSR:		.EQU $C1		; USR
-TKERL:		.EQU $C2		; ERL
-TKERR:		.EQU $C3		; ERR
-TKSTRG:		.EQU $C4		; STRING$
-TKINST:		.EQU $C5		; INSTR
-TKPOIN:		.EQU $C6		; POINT
-TKTIME:		.EQU $C7		; TIME$
-TKMEM:		.EQU $C8		; MEM
-TKINKY:		.EQU $C9		; INKEY$
-TKTHEN:		.EQU $CA		; THEN
-TKNOT:		.EQU $CB		; NOT
-TKSTEP:		.EQU $CC		; STEP
-TKPLUS:		.EQU $CD		; +
-TKMNUS:		.EQU $CE		; -
-TKGT:		.EQU $D4		; >
-TKEQL:		.EQU $D5		; =
-TKSNQT:		.EQU $FB		; '
+TKFOR:	.EQU	$81	; FOR
+TKDATA:	.EQU	$88	; DATA
+TKGOTO:	.EQU	$8D	; GOTO
+TKREM:	.EQU	$93	; REM
+TKELSE:	.EQU	$95	; ELSE
+TKPRNT:	.EQU	$B2	; PRINT
+TKTAB:	.EQU	$BC	; TAB(
+TKTO:	.EQU	$BD	; TO
+TKFN:	.EQU	$BE	; FN
+TKUSNG:	.EQU	$BF	; USING
+TKVARP:	.EQU	$C0	; VARPTR
+TKUSR:	.EQU	$C1	; USR
+TKERL:	.EQU	$C2	; ERL
+TKERR:	.EQU	$C3	; ERR
+TKSTRG:	.EQU	$C4	; STRING$
+TKINST:	.EQU	$C5	; INSTR
+TKPOIN:	.EQU	$C6	; POINT
+TKTIME:	.EQU	$C7	; TIME$
+TKMEM:	.EQU	$C8	; MEM
+TKINKY:	.EQU	$C9	; INKEY$
+TKTHEN:	.EQU	$CA	; THEN
+TKNOT:	.EQU	$CB	; NOT
+TKSTEP:	.EQU	$CC	; STEP
+TKPLUS:	.EQU	$CD	; +
+TKMNUS:	.EQU	$CE	; -
+TKGT:	.EQU	$D4	; >
+TKEQL:	.EQU	$D5	; =
+TKSNQT:	.EQU	$FB	; '
 ;
 ; ----------------------------------------------------------------------
 ;   ERROR CODES - in format ERRnn where "nn" is the basic Error
 ;       SEE table at 18C9 for the associated Text descriptions
 ; ----------------------------------------------------------------------
-ERRNF:		.EQU 00H   	; NEXT without FOR
-ERRSN:		.EQU 02H         ; Syntax Error
-ERRRG:		.EQU 04H         ; RETURN without GOSUB
-ERROD:		.EQU 06H         ; Out of DATA
-ERRFC:		.EQU 08H         ; Illegal Function Call
-ERROV:		.EQU 0AH         ; Overflow
-ERROM:		.EQU 0CH         ; Out of Memory
-ERRUL:		.EQU 0EH         ; Underfined Line Number
-ERRBS:		.EQU 10H         ; Subscript out of Range
-ERRDD:		.EQU 12H         ; Redimensioned Array
-ERRD0:		.EQU 14H         ; Division by Zero
-ERRID:		.EQU 16H         ; Illegal Direct Operation
-ERRTM:		.EQU 18H         ; Type Mismatch
-ERROS:		.EQU 1AH         ; Out of String Message
-ERRLS:		.EQU 1CH         ; Out of Memory
-ERRST:		.EQU 1EH         ; String Too Long
-ERRCN:		.EQU 20H         ; Can’t Continue
-ERRNR:		.EQU 22H         ; No RESUME
-ERRRW:		.EQU 24H         ; RESUME Without Error
-ERRUE:		.EQU 26H         ; Unprintable Error
-ERRMO:		.EQU 28H         ; Missing Operand
-ERRFD:		.EQU 2AH         ; Bad file Data
-ERRL3:		.EQU 2CH         ; Disk BASIC Command
+ERRNF:	.EQU	00H   	; NEXT without FOR
+ERRSN:	.EQU	02H	; Syntax Error
+ERRRG:	.EQU	04H	; RETURN without GOSUB
+ERROD:	.EQU	06H	; Out of DATA
+ERRFC:	.EQU	08H	; Illegal Function Call
+ERROV:	.EQU	0AH	; Overflow
+ERROM:	.EQU	0CH	; Out of Memory
+ERRUL:	.EQU	0EH	; Underfined Line Number
+ERRBS:	.EQU	10H	; Subscript out of Range
+ERRDD:	.EQU	12H	; Redimensioned Array
+ERRD0:	.EQU	14H	; Division by Zero
+ERRID:	.EQU	16H	; Illegal Direct Operation
+ERRTM:	.EQU	18H	; Type Mismatch
+ERROS:	.EQU	1AH	; Out of String Message
+ERRLS:	.EQU	1CH	; Out of Memory
+ERRST:	.EQU	1EH	; String Too Long
+ERRCN:	.EQU	20H	; Can’t Continue
+ERRNR:	.EQU	22H	; No RESUME
+ERRRW:	.EQU	24H	; RESUME Without Error
+ERRUE:	.EQU	26H	; Unprintable Error
+ERRMO:	.EQU	28H	; Missing Operand
+ERRFD:	.EQU	2AH	; Bad file Data
+ERRL3:	.EQU	2CH	; Disk BASIC Command
 ;
 ; ----------------------------------------------------------------------
 ;   Z-80 TRICKS - these are 1 byte opcode for multibyte instructions
@@ -108,30 +108,30 @@ ERRL3:		.EQU 2CH         ; Disk BASIC Command
 ;
 ;   https://wikiti.brandonw.net/index.php?title=Z80_Optimization#Better_else
 ; ----------------------------------------------------------------------
-LDBCNN:		.EQU $01		; LD BC,nnnn - skip 2 bytes
-LDBNN:		.EQU $06		; LD B,nn - skip next byte
-LDCNN:		.EQU $0E		; LD C,nn - skipping next byte
-LDDENN:		.EQU $11		; LD DE,nnnn - skip next 2 bytes
-LDDNN:		.EQU $16		; LD D,nn - skipping next byte
-LDHLNN:		.EQU $21		; LD HL,nnnn - skip 2 bytes
-LDLNN:		.EQU $2E		; LD L,nn - skip 1 byte
-LDANN:		.EQU $3E		; LD A,nn - skip 1 byte
-JPZNN:		.EQU $CA		; JP Z,nnnn - skip 2 bytes
-JPNCNN:		.EQU $D2		; JP NC,nnnn - skip 2 bytes
-JPCNN:		.EQU $DA		; JP C,nnnn - skips 2 bytes
-ORNN:		.EQU $F6		; OR nn - skip 1 byte
-JPMNN:		.EQU $FA		; JP M,nnnn - skip 2 bytes
-CPNN:		.EQU $FE		; CP nn - skip next bytye
+LDBCNN:	.EQU 	$01	; LD BC,nnnn - skip 2 bytes
+LDBNN:	.EQU 	$06	; LD B,nn - skip next byte
+LDCNN:	.EQU 	$0E	; LD C,nn - skipping next byte
+LDDENN:	.EQU 	$11	; LD DE,nnnn - skip next 2 bytes
+LDDNN:	.EQU 	$16	; LD D,nn - skipping next byte
+LDHLNN:	.EQU 	$21	; LD HL,nnnn - skip 2 bytes
+LDLNN:	.EQU 	$2E	; LD L,nn - skip 1 byte
+LDANN:	.EQU 	$3E	; LD A,nn - skip 1 byte
+JPZNN:	.EQU 	$CA	; JP Z,nnnn - skip 2 bytes
+JPNCNN:	.EQU 	$D2	; JP NC,nnnn - skip 2 bytes
+JPCNN:	.EQU 	$DA	; JP C,nnnn - skips 2 bytes
+ORNN:	.EQU 	$F6	; OR nn - skip 1 byte
+JPMNN:	.EQU 	$FA	; JP M,nnnn - skip 2 bytes
+CPNN:	.EQU 	$FE	; CP nn - skip next bytye
 ;
 ; ----------------------------------------------------------------------
 ;   MISC
 ; ----------------------------------------------------------------------
-BACKS:		.EQU $08		; ASCII Control Codes
-TAB:		.EQU $09
-LINEF:		.EQU $0A
-FORMF:		.EQU $0C
-CRET:		.EQU $0D
-SPACE:		.EQU $20
+BACKS:	.EQU 	$08	; ASCII Control Codes
+TAB:	.EQU 	$09
+LINEF:	.EQU 	$0A
+FORMF:	.EQU 	$0C
+CRET:	.EQU 	$0D
+SPACE:	.EQU 	$20
 ;
 ; ======================================================================
 ;   START OF PROGRAM CODE
@@ -5020,7 +5020,7 @@ RESLST:
 ;           - in token order staring at token $80 - ending at $BB
 ; ----------------------------------------------------------------------
 STMDSP:
-	.DW	END		; END
+	.DW	END		; END - ID = $80
 	.DW	FOR		; FOR
 	.DW	RESET		; RESET
 	.DW	SET		; SET
@@ -5079,8 +5079,7 @@ STMDSP:
 	.DW	CLEAR		; CLEAR
 	.DW	CLOAD		; CLOAD
 	.DW	CSAVE		; CSAVE
-	.DW	SCRATH		; NEW
-	; The NEW Token is ID = $BB
+	.DW	SCRATH		; NEW - ID = $BB
 ;
 ; ----------------------------------------------------------------------
 ; 1892-18A0 - Operation Precedent Table
@@ -9721,7 +9720,7 @@ QED:	pop	bc		;2ff6
 ;  Input Output Map
 ; ----------------------------------------------------------------------
 ;
-vidcmt:		.EQU $FF		; VIDEO I/O Port
+vidcmt:	.EQU	$FF		; VIDEO I/O Port
 ;
 ; ----------------------------------------------------------------------
 ;  Memory Mapped Hardware
@@ -9738,167 +9737,167 @@ kbdmatrix:	.EQU $3800	; keyboard matrix start (100H bytes)
 vidmem:		.EQU $3C00	; start of video RAM (400H bytes)
 
 
-RAM:		.EQU $4000	; Start of RAM Communications area
+RAM:	.EQU	$4000		; Start of RAM Communications area
 ;
 ; ----------------------------------------------------------------------
 ;  Memory Map
 ; ----------------------------------------------------------------------
 ;
-mRST1:		.EQU RAM+$00	; RST 08h (Syntax Check) Vector
-mRST2:		.EQU RAM+$03	; RST 10h (Get Next Character) Vector.
-mRST3:		.EQU RAM+$06	; RST 18h (Cp HL, DE) Vector.
-mRST4:		.EQU RAM+$09	; RST 20h (Get Current Type) Vector.
-mRST5:		.EQU RAM+$0C	; RST 28h (Break Key Vector) Vector.
-mRST6:		.EQU RAM+$0F	; RST 30h () Vector.
-mRST7:		.EQU RAM+$12	; RST 38h (Interrup Service) Vector.
+mRST1:	.EQU	RAM+$00		; RST 08h (Syntax Check) Vector
+mRST2:	.EQU	RAM+$03		; RST 10h (Get Next Character) Vector.
+mRST3:	.EQU	RAM+$06		; RST 18h (Cp HL, DE) Vector.
+mRST4:	.EQU	RAM+$09		; RST 20h (Get Current Type) Vector.
+mRST5:	.EQU	RAM+$0C		; RST 28h (Break Key Vector) Vector.
+mRST6:	.EQU	RAM+$0F		; RST 30h () Vector.
+mRST7:	.EQU	RAM+$12		; RST 38h (Interrup Service) Vector.
 ;
-mKDCB:		.EQU RAM+$15	; Keyboard Device Block
-mDDCB:		.EQU RAM+$1D	; Video Device Block
-CURSOR:		.EQU RAM+$20	; Video Device Block - CURSOR
-mPDCB:		.EQU RAM+$25	; Printer Device Block
+mKDCB:	.EQU	RAM+$15		; Keyboard Device Block
+mDDCB:	.EQU	RAM+$1D		; Video Device Block
+CURSOR:	.EQU	RAM+$20		; Video Device Block - CURSOR
+mPDCB:	.EQU	RAM+$25		; Printer Device Block
 ;
-CIOSS:		.EQU RAM+$33	; call device driver ala dos - CIO$
-KYBTSS:		.EQU RAM+$36	; Keyboard driver work area (to 403C) - KYB$
-CAST:		.EQU RAM+$3D	; Video Display Control Attributes
+CIOSS:	.EQU	RAM+$33		; call device driver ala dos - CIO$
+KYBTSS:	.EQU	RAM+$36		; Keyboard driver work area (to 403C) - KYB$
+CAST:	.EQU	RAM+$3D		; Video Display Control Attributes
 ;
-TMPSTK:		.EQU RAM+$7D	; Stack pointer for initial DISK, bootstrap.
+TMPSTK:	.EQU	RAM+$7D		; Stack pointer for initial DISK, bootstrap.
 ;
-FDIVC:		.EQU RAM+$80	; Subtraction routine used by division code...
-FDIVB:		.EQU RAM+$84	; These offests are used to set argumnets...
-FDIVA:		.EQU RAM+$88	; into the routine before calling it...
-FDIVG:		.EQU RAM+$8B	; hence why the code is copied into RAM.
+FDIVC:	.EQU	RAM+$80		; Subtraction routine used by division code...
+FDIVB:	.EQU	RAM+$84		; These offests are used to set argumnets...
+FDIVA:	.EQU	RAM+$88		; into the routine before calling it...
+FDIVG:	.EQU	RAM+$8B		; hence why the code is copied into RAM.
 ;
-USRTAB:		.EQU RAM+$8E	; Contains address of user subroutine
+USRTAB:	.EQU	RAM+$8E		; Contains address of user subroutine
 ;
-MULTR:		.EQU RAM+$90	; Random number seed
-STAINP:		.EQU RAM+$93	; Input  port routine IN  A,(00)
-OUTWRD:		.EQU RAM+$96	; Output port routine OUT A,(00)
-CHARC:		.EQU RAM+$99	; Last key pressed on the keyboard
-ERRFLG:		.EQU RAM+$9A	; Current Error Code. See ERR function
-LPTPOS:		.EQU RAM+$9B	; No. Of chars. In current print line
-PRTFLG:		.EQU RAM+$9C	; This is the current device output flag.
-LINLEN:		.EQU RAM+$9D	; Number of chars on video display line.
-CLMLST:		.EQU RAM+$9E	; Number of chars on printed line.
+MULTR:	.EQU	RAM+$90		; Random number seed
+STAINP:	.EQU	RAM+$93		; Input  port routine IN  A,(00)
+OUTWRD:	.EQU	RAM+$96		; Output port routine OUT A,(00)
+CHARC:	.EQU	RAM+$99		; Last key pressed on the keyboard
+ERRFLG:	.EQU	RAM+$9A		; Current Error Code. See ERR function
+LPTPOS:	.EQU	RAM+$9B		; No. Of chars. In current print line
+PRTFLG:	.EQU	RAM+$9C		; This is the current device output flag.
+LINLEN:	.EQU	RAM+$9D		; Number of chars on video display line.
+CLMLST:	.EQU	RAM+$9E		; Number of chars on printed line.
 ;
-STKTOP:		.EQU RAM+$A0	; Start of String Storage Area. Pointer
-CURLIN:		.EQU RAM+$A2	; Current Line Number in a BASIC Program
-TXTTAB:		.EQU RAM+$A4	; Start of Basic Program Storage. Pointer
-TTYPOS:		.EQU RAM+$A6	; Cursor pos on VDU line. See POS function.
-BUFPNT:		.EQU RAM+$A7	; Keyboard Input buffer. Pointer
-CASFLG:		.EQU RAM+$A9	; contains 00H if INPUT from cassette
-RNDX:		.EQU RAM+$AA	; Random number seed
-DIMFLG:		.EQU RAM+$AE	; locate or create variable routine flag
-VALTYP:		.EQU RAM+$AF	; Work Register Value Type flag
+STKTOP:	.EQU	RAM+$A0		; Start of String Storage Area. Pointer
+CURLIN:	.EQU	RAM+$A2		; Current Line Number in a BASIC Program
+TXTTAB:	.EQU	RAM+$A4		; Start of Basic Program Storage. Pointer
+TTYPOS:	.EQU	RAM+$A6		; Cursor pos on VDU line. See POS function.
+BUFPNT:	.EQU	RAM+$A7		; Keyboard Input buffer. Pointer
+CASFLG:	.EQU	RAM+$A9		; contains 00H if INPUT from cassette
+RNDX:	.EQU	RAM+$AA		; Random number seed
+DIMFLG:	.EQU	RAM+$AE		; locate or create variable routine flag
+VALTYP:	.EQU	RAM+$AF		; Work Register Value Type flag
 ;
-DORES:		.EQU RAM+$B0	; Intermediate value during expression eval
-MEMSIZ:		.EQU RAM+$B1	; Top of memory pointer
-TEMPPT:		.EQU RAM+$B3	; next location for three-byte string variable
-TEMPST:		.EQU RAM+$B5	; String variable VARPTR storage area
+DORES:	.EQU	RAM+$B0		; Intermediate value during expression eval
+MEMSIZ:	.EQU	RAM+$B1		; Top of memory pointer
+TEMPPT:	.EQU	RAM+$B3		; next location for three-byte string variable
+TEMPST:	.EQU	RAM+$B5		; String variable VARPTR storage area
 ;
-DSCTMP:		.EQU RAM+$D3	; VARPTR storage area for string being created
-FRETOP:		.EQU RAM+$D6	; Pointer to next free byte in string storage area
-TEMP3:		.EQU RAM+$D8	; temporary storage location
-DATLIN:		.EQU RAM+$DA	; Line number of last DATA item read
-SUBFLG:		.EQU RAM+$DC	; If 64 a FOR-NEXT loop is being processed
-BFKLFL:		.EQU RAM+$DD	; Flag indicates whether inputing text
-FLGINP:		.EQU RAM+$DE	; Flags whether READ or INPUT, and PRINT USING
-TEMP:		.EQU RAM+$DF	; temporary storage location
+DSCTMP:	.EQU	RAM+$D3		; VARPTR storage area for string being created
+FRETOP:	.EQU	RAM+$D6		; Pointer to next free byte in string storage area
+TEMP3:	.EQU	RAM+$D8		; temporary storage location
+DATLIN:	.EQU	RAM+$DA		; Line number of last DATA item read
+SUBFLG:	.EQU	RAM+$DC		; If 64 a FOR-NEXT loop is being processed
+BFKLFL:	.EQU	RAM+$DD		; Flag indicates whether inputing text
+FLGINP:	.EQU	RAM+$DE		; Flags whether READ or INPUT, and PRINT USING
+TEMP:	.EQU	RAM+$DF		; temporary storage location
 ;
-AUTFLG:		.EQU RAM+$E1	; AUTO on or off flag. 0=AUTO is off.
-AUTLIN:		.EQU RAM+$E2	; Current line number for the AUTO command.
-AUTINC:		.EQU RAM+$E4	; AUTO command increment value
-SAVTXT:		.EQU RAM+$E6	; During input: addr of code string for current statement
-SAVSTK:		.EQU RAM+$E8	; During execution: holds stack pointer value when statement execution begins
-ERRLIN:		.EQU RAM+$EA	; Line no. In which error occurred
-DOT:		.EQU RAM+$EC	; Stores the current line number.
-ERRTXT:		.EQU RAM+$EE	; Pointer to last byte executed when error occured. Used by RESUME command.
+AUTFLG:	.EQU	RAM+$E1		; AUTO on or off flag. 0=AUTO is off.
+AUTLIN:	.EQU	RAM+$E2		; Current line number for the AUTO command.
+AUTINC:	.EQU	RAM+$E4		; AUTO command increment value
+SAVTXT:	.EQU	RAM+$E6		; During input: addr of code string for current statement
+SAVSTK:	.EQU	RAM+$E8		; During execution: holds stack pointer value when statement execution begins
+ERRLIN:	.EQU	RAM+$EA		; Line no. In which error occurred
+DOT:	.EQU	RAM+$EC		; Stores the current line number.
+ERRTXT:	.EQU	RAM+$EE		; Pointer to last byte executed when error occured. Used by RESUME command.
 ;
-ONELIN:		.EQU RAM+$F0	; Line Number: ON ERROR location for ON ERROR GOTO
-ONEFLG:		.EQU RAM+$F2	; Flag to indicate whether an error has occured
-TEMP2:		.EQU RAM+$F3	; Addr of decimal point in pbuff
-OLDLIN:		.EQU RAM+$F5	; Last line number executed prior to execution of STOP or END
-OLDTXT:		.EQU RAM+$F7	; Pointer to end of last statement executed. Used by CONT command.
-VARTAB:		.EQU RAM+$F9	; Starting address of the simple variables list table
-ARYTAB:		.EQU RAM+$FB	; Starting address of the ARRAY VARIABLE TABLE
-STREND:		.EQU RAM+$FD	; Pointer to the END of array variables, start of free memory
-DATPTR:		.EQU RAM+$FF	; ‘DATA’ Pointer (2 Byte Address; LSB, MSB).
+ONELIN:	.EQU	RAM+$F0		; Line Number: ON ERROR location for ON ERROR GOTO
+ONEFLG:	.EQU	RAM+$F2		; Flag to indicate whether an error has occured
+TEMP2:	.EQU	RAM+$F3		; Addr of decimal point in pbuff
+OLDLIN:	.EQU	RAM+$F5		; Last line number executed prior to execution of STOP or END
+OLDTXT:	.EQU	RAM+$F7		; Pointer to end of last statement executed. Used by CONT command.
+VARTAB:	.EQU	RAM+$F9		; Starting address of the simple variables list table
+ARYTAB:	.EQU	RAM+$FB		; Starting address of the ARRAY VARIABLE TABLE
+STREND:	.EQU	RAM+$FD		; Pointer to the END of array variables, start of free memory
+DATPTR:	.EQU	RAM+$FF		; ‘DATA’ Pointer (2 Byte Address; LSB, MSB).
 ;
-DEFTBL:		.EQU RAM+$101	; Variable declaration list. 1 entry for each letter A-Z (4101-411A)
+DEFTBL:	.EQU	RAM+$101	; Variable declaration list. 1 entry for each letter A-Z (4101-411A)
 ;
-TRCFLG:		.EQU RAM+$11B	; Trace flag: 0=off (TROFF), non-zero=on (TRON)
+TRCFLG:	.EQU	RAM+$11B	; Trace flag: 0=off (TROFF), non-zero=on (TRON)
 ;
-DFACLO:		.EQU RAM+$11D	; REG 1  - Double Precision (Reg 1 411D-4124)
-FACLO:		.EQU RAM+$121	; REG 1  - Single Precision
-FAC:		.EQU RAM+$124	; REG 1  - Exponent
-FACSGN:		.EQU RAM+$125	; Result - Sign  of result for math ops (FAC+1)
-FACFLG:		.EQU RAM+$126	; Result - Flags of result for math ops (FAC+2)
-ARGLO:		.EQU RAM+$127	; REG 2  - Double Precision (Reg 2 4127-412E)
-ARG:		.EQU RAM+$12E	; REG 2  - Exponent
+DFACLO:	.EQU	RAM+$11D	; REG 1  - Double Precision (Reg 1 411D-4124)
+FACLO:	.EQU	RAM+$121	; REG 1  - Single Precision
+FAC:	.EQU	RAM+$124	; REG 1  - Exponent
+FACSGN:	.EQU	RAM+$125	; Result - Sign  of result for math ops (FAC+1)
+FACFLG:	.EQU	RAM+$126	; Result - Flags of result for math ops (FAC+2)
+ARGLO:	.EQU	RAM+$127	; REG 2  - Double Precision (Reg 2 4127-412E)
+ARG:	.EQU	RAM+$12E	; REG 2  - Exponent
 ;
-FBUFFR:		.EQU RAM+$130	; Print buffer used for print processing  (4130-4149)
-FMLTT0:		.EQU RAM+$14A	; Workspace For Double Precision Division (414A-4151)
-FMLTT1:		.EQU RAM+$14F	; continued.
-FMLTT2:		.EQU RAM+$150	; continued.
+FBUFFR:	.EQU	RAM+$130	; Print buffer used for print processing  (4130-4149)
+FMLTT0:	.EQU	RAM+$14A	; Workspace For Double Precision Division (414A-4151)
+FMLTT1:	.EQU	RAM+$14F	; continued.
+FMLTT2:	.EQU	RAM+$150	; continued.
 ;
 ; Disk BASIC Function Exits - Basic Functions (4152-41A5)
-ERCALL:		.EQU RAM+$152	; Base Address for Disk Basic Functions
-DVCVI:		.EQU ERCALL+0	; CVI - $4152
-DVFN:		.EQU ERCALL+3	; FN  - $4155
-DVCVS:		.EQU ERCALL+6	; CVS - $4158
-DVDEF:		.EQU ERCALL+9	; DEF - $415B
-DVCVD:		.EQU ERCALL+12	; CVD - $415E
-DVEOF:		.EQU ERCALL+15	; EOF - $4161
-DVLOC:		.EQU ERCALL+18	; LOC - $4164
-DVLOF:		.EQU ERCALL+21	; LOF - $4167
-DVMKI:		.EQU ERCALL+24	; MKI - $416A
-DVMKS:		.EQU ERCALL+27	; MKS - $417D
-DVMKD:		.EQU ERCALL+30	; MKD - $4170
-DVCMD:		.EQU ERCALL+33	; CMD . $4173
-DVTIME:		.EQU ERCALL+36	; TIME$ $4176
-DVOPEN:		.EQU ERCALL+39	; OPEN  $4179
-DVFIEL:		.EQU ERCALL+42	; FIELD $417C
-DVGET:		.EQU ERCALL+45	; GET - $417F
-DVPUT:		.EQU ERCALL+48	; PUT - $4182
-DVCLOS:		.EQU ERCALL+51	; CLOSE $4185
-DVLOAD:		.EQU ERCALL+54	; LOAD  $4188
-DVMERG:		.EQU ERCALL+57	; MERGE $418B
-DVNAME:		.EQU ERCALL+60	; NAME  $418E
-DVKILL:		.EQU ERCALL+63	; KILL  $4191
-DVAND:		.EQU ERCALL+66	; &   - $4194
-DVLSET:		.EQU ERCALL+69	; LSET  $4197
-DVREST:		.EQU ERCALL+72	; RSET  $419A
-DVINST:		.EQU ERCALL+75	; INSTR $419D
-DVSAVE:		.EQU ERCALL+78	; SAVE  $41A0
-DVLINE:		.EQU ERCALL+81	; LINE  $41A3
+ERCALL:	.EQU	RAM+$152	; Base Address for Disk Basic Functions
+DVCVI:	.EQU	ERCALL+0	; CVI - $4152
+DVFN:	.EQU	ERCALL+3	; FN  - $4155
+DVCVS:	.EQU	ERCALL+6	; CVS - $4158
+DVDEF:	.EQU	ERCALL+9	; DEF - $415B
+DVCVD:	.EQU	ERCALL+12	; CVD - $415E
+DVEOF:	.EQU	ERCALL+15	; EOF - $4161
+DVLOC:	.EQU	ERCALL+18	; LOC - $4164
+DVLOF:	.EQU	ERCALL+21	; LOF - $4167
+DVMKI:	.EQU	ERCALL+24	; MKI - $416A
+DVMKS:	.EQU	ERCALL+27	; MKS - $417D
+DVMKD:	.EQU	ERCALL+30	; MKD - $4170
+DVCMD:	.EQU	ERCALL+33	; CMD . $4173
+DVTIME:	.EQU	ERCALL+36	; TIME$ $4176
+DVOPEN:	.EQU	ERCALL+39	; OPEN  $4179
+DVFIEL:	.EQU	ERCALL+42	; FIELD $417C
+DVGET:	.EQU	ERCALL+45	; GET - $417F
+DVPUT:	.EQU	ERCALL+48	; PUT - $4182
+DVCLOS:	.EQU	ERCALL+51	; CLOSE $4185
+DVLOAD:	.EQU	ERCALL+54	; LOAD  $4188
+DVMERG:	.EQU	ERCALL+57	; MERGE $418B
+DVNAME:	.EQU	ERCALL+60	; NAME  $418E
+DVKILL:	.EQU	ERCALL+63	; KILL  $4191
+DVAND:	.EQU	ERCALL+66	; &   - $4194
+DVLSET:	.EQU	ERCALL+69	; LSET  $4197
+DVREST:	.EQU	ERCALL+72	; RSET  $419A
+DVINST:	.EQU	ERCALL+75	; INSTR $419D
+DVSAVE:	.EQU	ERCALL+78	; SAVE  $41A0
+DVLINE:	.EQU	ERCALL+81	; LINE  $41A3
 ;
 ; DOS Exits, Pass control between Level II BASIC and Disk BASIC (41AC-41E2)
-DEXT:		.EQU RAM+$1A6	; Base Address for DOS Exits
-EXDSKR:		.EQU DEXT+0	; (19EC) Disk Basic ERROR handling
-USROUT:		.EQU DEXT+3	; (27FE) USR N - to expand function to provide up to ten USR calls
-PRGFIN:		.EQU DEXT+6	; (1A1C) BASIC start up. Just before BASIC's 'READY' message
-INLINE:		.EQU DEXT+9	; (0368) At start of keyboard input
-DIRDO:		.EQU DEXT+12	; (1AA1) Input scanner after tokenizing current statement
-EXFIND:		.EQU DEXT+15	; (1AEC) Input scanner after updating program statement table
-EXFIN2:		.EQU DEXT+18	; (1AF2) Input scanner after reinitializing BASIC.
-CLSALL:		.EQU DEXT+21	; (1D**) Initializing BASIC for new routine. During END processing
-FINDRT:		.EQU DEXT+24	; (2174) During initializing of system output device
-EXOUTC:		.EQU DEXT+27	; (032C) During writing to system output device.
-EXINC:		.EQU DEXT+30	; (0358) When scanning keyboard.
-LRUN:		.EQU DEXT+33	; (1Ea6) At start of RUN NNN processing.
-FILGET:		.EQU DEXT+36	; (206f) At beginning of PRINT processing.
-EXDSKL:		.EQU DEXT+39	; (20c6) During PRINT # or PRINT item processing.
-EXDSCR:		.EQU DEXT+42	; (2103) When skipping to next line on video during a output op
-EXPDOS:		.EQU DEXT+45	; (21**) At start of PRINT on cassette and during PRINT TAB.
-EXUNKN:		.EQU DEXT+48	; (219e) At beginning of INPUT processing
-DLHSMD:		.EQU DEXT+51	; (2AEC)
-FILIND:		.EQU DEXT+54	; (222D) During READ processing when a variable has been read.
-EXCHDS:		.EQU DEXT+57	; (2***) From List, At end of READ processing
-SYSOUT:		.EQU DEXT+60	; (02B2) During SYSTEM command operation
+DEXT:	.EQU	RAM+$1A6	; Base Address for DOS Exits
+EXDSKR:	.EQU	DEXT+0		; (19EC) Disk Basic ERROR handling
+USROUT:	.EQU	DEXT+3		; (27FE) USR N - to expand function to provide up to ten USR calls
+PRGFIN:	.EQU	DEXT+6		; (1A1C) BASIC start up. Just before BASIC's 'READY' message
+INLINE:	.EQU	DEXT+9		; (0368) At start of keyboard input
+DIRDO:	.EQU	DEXT+12		; (1AA1) Input scanner after tokenizing current statement
+EXFIND:	.EQU	DEXT+15		; (1AEC) Input scanner after updating program statement table
+EXFIN2:	.EQU	DEXT+18		; (1AF2) Input scanner after reinitializing BASIC.
+CLSALL:	.EQU	DEXT+21		; (1D**) Initializing BASIC for new routine. During END processing
+FINDRT:	.EQU	DEXT+24		; (2174) During initializing of system output device
+EXOUTC:	.EQU	DEXT+27		; (032C) During writing to system output device.
+EXINC:	.EQU	DEXT+30		; (0358) When scanning keyboard.
+LRUN:	.EQU	DEXT+33		; (1Ea6) At start of RUN NNN processing.
+FILGET:	.EQU	DEXT+36		; (206f) At beginning of PRINT processing.
+EXDSKL:	.EQU	DEXT+39		; (20c6) During PRINT # or PRINT item processing.
+EXDSCR:	.EQU	DEXT+42		; (2103) When skipping to next line on video during a output op
+EXPDOS:	.EQU	DEXT+45		; (21**) At start of PRINT on cassette and during PRINT TAB.
+EXUNKN:	.EQU	DEXT+48		; (219e) At beginning of INPUT processing
+DLHSMD:	.EQU	DEXT+51		; (2AEC)
+FILIND:	.EQU	DEXT+54		; (222D) During READ processing when a variable has been read.
+EXCHDS:	.EQU	DEXT+57		; (2***) From List, At end of READ processing
+SYSOUT:	.EQU	DEXT+60		; (02B2) During SYSTEM command operation
 ;
-BUFINI:		.EQU RAM+$1E5	; String Buffer initialised colon null comma
-SMPSTK:		.EQU RAM+$1F8 	; Initial Stack address.
+BUFINI:	.EQU	RAM+$1E5	; String Buffer initialised colon null comma
+SMPSTK:	.EQU	RAM+$1F8	; Initial Stack address.
 ;
-MEMEND:		.EQU RAM+$200	; End of Reserved RAM Communications area
+MEMEND:	.EQU	RAM+$200	; End of Reserved RAM Communications area
 ;
 ; ======================================================================
 	.END
