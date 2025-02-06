@@ -6859,9 +6859,10 @@ NOTABR:	pop	hl		;2164
 ;        zero (output to video display), also turns off cassette drive if
 ;        necessary. CALLs Disk BASIC link at 41BEH prior to return.
 ; ----------------------------------------------------------------------
-FINPRT:	ld	a,(PRTFLG)	;2169
-	or	a		;216c
-	call	m,CTOFF		;216d
+FINPRT:
+	ld	a,(PRTFLG)	;2169 - current output device flag
+	or	a		;216c - check the flags
+	call	m,CTOFF		;216d - If cassette, turn it off
 	xor	a		;2170
 	ld	(PRTFLG),a	;2171
 	call	FINDRT		;2174
@@ -9391,13 +9392,9 @@ PLSPRT:	push	af		;2e49
 	call	nz,OUTDO	;2e4e
 	pop	af		;2e51
 	ret			;2e52
-; ----------------------------------------------------------------------
-; 2E53-2FFA – LEVEL II BASIC EDIT ROUTINE – “ERREDT”
 ;
-;   the EDIT command takes a single
-;   line number as its argument. If that line doesn’t exist, and error
-;   is thrown. If the line does exist, the line number is then typed,
-;   and the system waits for the user to enter any of the valid commands.
+; ----------------------------------------------------------------------
+; enter EDIT if there was an error in a line number
 ; ----------------------------------------------------------------------
 ERREDT:	ld	(ERRFLG),a	;2e53
 	ld	hl,(ERRLIN)	;2e56
@@ -9408,9 +9405,12 @@ ERREDT:	ld	(ERRFLG),a	;2e53
 	ret	z		;2e5d
 	jr	EREDIT		;2e5e
 ; ----------------------------------------------------------------------
-; Now that the above code is out of the way (it was the code which would
-; enter EDIT if there was an error in a line number), let us actually
-; process the EDIT command
+; 2E60-2FFA – LEVEL II BASIC EDIT ROUTINE – “EDIT”
+;
+;   the EDIT command takes a single line number as its argument. If that
+;   line doesn’t exist, and error is thrown. If the line does exist,
+;   the line number is then typed, and the system waits for the user
+;   to enter any of the valid commands.
 ; ----------------------------------------------------------------------
 EDIT:	call	LINSPC		;2e60
 	ret	nz		;2e63
