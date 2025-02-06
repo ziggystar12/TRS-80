@@ -127,11 +127,26 @@ CPNN:	.EQU 	$FE	; CP nn - skip next bytye
 ; ----------------------------------------------------------------------
 ;   MISC
 ; ----------------------------------------------------------------------
-BACKS:	.EQU 	$08	; ASCII Control Codes
+BACKS:	.EQU 	$08	; Standard ASCII Control Codes
 TAB:	.EQU 	$09
 LINEF:	.EQU 	$0A
 FORMF:	.EQU 	$0C
 CRET:	.EQU 	$0D
+;
+; Following are special meaning CHR codes, not ASCII standard
+BREAK:	.EQU	$01	; (BREAK Key)
+CURON:	.EQU	$0E	; turn on cursor.
+CUROFF:	.EQU	$0F 	; turn off cursor.
+MODE32:	.EQU	$17	; select line size of 32 char/line.
+MOVEL:	.EQU	$18	; backspace one character (LEFT Arrow Key)
+MOVER:	.EQU	$19	; skip forward one character (RIGHT Arrow Key)
+MOVED:	.EQU	$1A	; skip down one line (DOWN Arrow Key).
+MOVEU:	.EQU	$1B	; skip up one line (UP Arrow Key).
+CHOME:	.EQU	$1C	; home cursor. select 64 char/line.
+CLINE:	.EQU	$1D	; position cursor to Start of current line
+ELINE:	.EQU	$1E	; erase from cursor to end of line
+EFRAM:	.EQU	$1F	; erase from Cursor to end of frame (CLEAR Key)
+;
 SPACE:	.EQU 	$20
 SEMICO	.EQU	$3B	; semicolin. Note ';' in code; was breaking some assemblers
 ;
@@ -328,19 +343,19 @@ _KEY:	call	_KBD		;0049
 ;   XXX in 1.3, Shift-↓ is $00 to act as a Ctrl key
 ;                Std    Shifted
 ; ----------------------------------------------------------------------
-KEYTAB:	.DB	CRET,  CRET	; RETURN
-	.DB	$1F,   $1F	; CLEAR
-	.DB	$01,   $01	; BREAK
-	.DB	$5B,   $1B	; ↑ Up Arrow
+KEYTAB:	.DB	CRET,   CRET	; RETURN
+	.DB	EFRAM,  EFRAM	; CLEAR
+	.DB	BREAK,  BREAK	; BREAK
+	.DB	$5B,    MOVEU	; ↑ Up Arrow
 #IFDEF VER13
-	.DB	LINEF, $00	; ↓ Down Arrow
+	.DB	LINEF,  $00	; ↓ Down Arrow
 				; to permit Shift-Down-Arrow to act as a control key
 #ELSE
-	.DB	LINEF, $1A	; ↓ Down Arrow
+	.DB	LINEF,  MOVED	; LF, ↓ Down Arrow
 #ENDIF
-	.DB	BACKS, $18	; ← Left arrow
-	.DB	TAB,   $19	; Tab
-	.DB	SPACE, SPACE	; Space
+	.DB	BACKS,  MOVEL	; BS, ← Left arrow
+	.DB	TAB,    MOVER	; Tab, -> right arrow
+	.DB	SPACE,  SPACE	; Space
 ;
 ; ----------------------------------------------------------------------
 ; 0060H-0065H – DELAY ROUTINE – "$PAUSE"
@@ -390,7 +405,7 @@ INIT2:	ld	de,FDIVC	;0075
 ; Fills the RAM locations pointing to all 28 DOS BASIC commands,
 ; set them to point to ?L3 ERROR, (4152-41A5)
 	ld	de,L3ERR	;008e - address of L3 error code
-	ld	b,$1C		;0091 - there are 28 DOS BASIC commands
+	ld	b,28		;0091 - there are 28 DOS BASIC commands
 	ld	hl,ERCALL	;0093 - address in RAM of lookup table
 ERLOPS:	ld	(hl),JPNN	;0096 - opcode (1st byte) for JP nnnn
 	inc	hl		;0098
@@ -627,9 +642,9 @@ NULRT:	ld	hl,m_REDDY-1	;01bc
 ;   Clear the screen, select 64 characters and home the cursor.
 ;   All registers are used.
 ; ----------------------------------------------------------------------
-CLS:	ld	a,$1C		;01c9
+CLS:	ld	a,CHOME		;01c9 - cursor Home
 	call	OUT2D		;01cb
-	ld	a,$1F		;01ce
+	ld	a,EFRAM		;01ce - erase to end of frame
 	jp	OUT2D		;01d0
 ;
 ; ======================================================================
@@ -1050,18 +1065,18 @@ CIO:	push	hl		;03c2
 	push	de		;03c5
 	pop	ix		;03c6
 	push	de		;03c8
-	ld	hl,CIORTN	;03c9
-	push	hl		;03cc
+	ld	hl,CIORTN	;03c9 - return address for device driver call
+	push	hl		;03cc - return address pushed to stack
 	ld	c,a		;03cd
-	ld	a,(de)		;03ce
+	ld	a,(de)		;03ce - device type code
 	and	b		;03cf
 	cp	b		;03d0
-	jp	nz,CIOSS	;03d1
+	jp	nz,CIOSS	;03d1 - jump to DOS device Driver (4033)
 	cp	$02		;03d4
 	ld	l,(ix+$01)	;03d6
 	ld	h,(ix+$02)	;03d9
-	jp	(hl)		;03dc
-CIORTN:	pop	de		;03dd
+	jp	(hl)		;03dc - Call driver entry address in HL
+CIORTN:	pop	de		;03dd - Device driver returns here
 	pop	ix		;03de
 	pop	hl		;03e0
 	pop	bc		;03e1
@@ -1074,7 +1089,7 @@ CIORTN:	pop	de		;03dd
 ;   the bit pattern obtained to ASCII and stores it in the A register.
 ; ----------------------------------------------------------------------
 KBDDRV:	ld	hl,KYBTSS	;03e3
-	ld	bc,kbdmatrix + $01;03e6
+	ld	bc,kbdmatrix+$01;03e6
 	ld	d,$00		;03e9
 KEYLP:	ld	a,(bc)		;03eb
 	ld	e,a		;03ec
@@ -1188,16 +1203,16 @@ DSPDRV:
 	jr	z,DSPGRP	;0464
 	ld	(hl),a		;0466
 DSPGRP:	ld	a,c		;0467
-	cp	$20		;0468
+	cp	$20		;0468 - is it a control code
 	jp	c,DSPCTL	;046a
 	cp	$80		;046d
-	jr	nc,DSPGRC	;046f
+	jr	nc,DSPGRC	;046f - is it a graphic
 	cp	$40		;0471
-	jr	c,DSPCHR	;0473
+	jr	c,DSPCHR	;0473 - is it alphabetic
 	sub	$40		;0475
-	cp	$20		;0477
+	cp	$20		;0477 - is it lower case
 	jr	c,DSPCHR	;0479
-	sub	$20		;047b
+	sub	$20		;047b - convert to upper case
 DSPCHR:	call	DSPOUT		;047d
 DSPSKP:	ld	a,h		;0480
 	and	$03		;0481
@@ -1321,30 +1336,30 @@ DSPCTL:	ld	de,DSPSKP	;0506
 	push	de		;0509
 	cp	BACKS		;050a  - is a backspace
 	jr	z,DSPBSP	;050c
-	cp	LINEF		;050e
+	cp	LINEF		;050e - is less than a line feed 0A character
 	ret	c		;0510
-	cp	$0E		;0511
+	cp	CURON		;0511 - cursor on
 	jr	c,DSPCR		;0513
 	jr	z,DSPCON	;0515
-	cp	$0F		;0517
+	cp	CUROFF		;0517 - cursor off
 	jr	z,DSPCOF	;0519
-	cp	$17		;051b
+	cp	MODE32		;051b - turn on the 32 character per line mode
 	jr	z,DSPETB	;051d
-	cp	$18		;051f
+	cp	MOVEL		;051f - move cursor left
 	jr	z,DSPLFT	;0521
-	cp	$19		;0523
+	cp	MOVER		;0523 - move cursor right
 	jr	z,DSPRHT	;0525
-	cp	$1A		;0527
+	cp	MOVED		;0527 - move cursor down
 	jr	z,DSPDWN	;0529
-	cp	$1B		;052b
+	cp	MOVEU		;052b - move cursor up
 	jr	z,DSPUP		;052d
-	cp	$1C		;052f
+	cp	CHOME		;052f - cursor home, top left
 	jr	z,DSPHOM	;0531
-	cp	$1D		;0533
+	cp	CLINE		;0533 - cursor to SOL
 	jp	z,DSPBOL	;0535
-	cp	$1E		;0538
+	cp	ELINE		;0538 - erase to EOL
 	jr	z,DSPEOL	;053a
-	cp	$1F		;053c
+	cp	EFRAM		;053c - erase to EOF
 	jr	z,DSPEOF	;053e
 	ret			;0540
 ; ----------------------------------------------------------------------
@@ -1483,7 +1498,7 @@ PRTSA:	ld	a,(prtstat)	;05d1
 ;   registers contain
 ; ----------------------------------------------------------------------
 KEYIN:	push	hl		;05d9
-	ld	a,$0E		;05da
+	ld	a,CURON		;05da - turn on the cursor character
 	call	_DSP		;05dc
 	ld	c,b		;05df
 KLNNXT:	call	_KEY		;05e0
@@ -1562,7 +1577,7 @@ KLNBSP:	ld	a,b		;0630
 ; 0641H – Part of the Display routine – “KLNETB”
 ;   Turn on 32 Character Mode
 ; ----------------------------------------------------------------------
-KLNETB:	ld	a,$17		;0641
+KLNETB:	ld	a,MODE32		;0641 - turn on the 32 character per line mode character
 	jp	_DSP		;0643
 ; ----------------------------------------------------------------------
 ; 0646H – Part of the Display routine – “KLNHT”
@@ -1596,7 +1611,7 @@ KLNCR:	push	af		;0662
 	ld	a,CRET		;0663
 	ld	(hl),a		;0665
 	call	_DSP		;0666
-	ld	a,$0F		;0669
+	ld	a,CUROFF		;0669 - turn off the cursor character
 	call	_DSP		;066b
 	ld	a,c		;066e
 	sub	b		;066f
@@ -1626,10 +1641,9 @@ CLRAM:	ld	(de),a		;0687
 	inc	de		;0688
 	djnz	CLRAM		;0689 - Copy 0 to $4036 - $4062
 ; ----------------------------------------------------------------------
-; 068BH – INITIALIZATION ROUTINE – "CHKMAN"
 ;  Check for a manual override
 ; ----------------------------------------------------------------------
-CHKMAN:	ld	a,(kbdmatrix+$40);068b
+	ld	a,(kbdmatrix+$40);068b
 	and	$04		;068e
 	jp	nz,INIT2	;0690
 ;
@@ -5657,7 +5671,7 @@ RUNC:	ld	hl,(TXTTAB)	;1b5d
 ; ----------------------------------------------------------------------
 ; ----------------------------------------------------------------------
 CLEARC:	ld	(TEMP),hl	;1b61
-	ld	b,$1A		;1b64
+	ld	b,26		;1b64 - number of variable names to be initialized
 	ld	hl,DEFTBL	;1b66
 LOFDPT:	ld	(hl),$04	;1b69
 	inc	hl		;1b6b
@@ -6693,7 +6707,7 @@ NEWCHR:	dec	hl 		;207C Backspace over previous symbol in code string
 PRINTC:	jp	z,FINPRT	;2081 If end of string turn off cassette and return
 	or	$20		;2084 Not end of string. Convert possible 40 to 60
  	cp	$60	 	;2086 Then test for @
-	jr	nz,PRINTD		;2088 Jmp if not PRINT @
+	jr	nz,PRINTD	;2088 Jmp if not PRINT @
  	call	GETINT 		;208A Evaluate @ expression, result in DE * PRINT @ routine
 	cp	$04		;208D A = MSB, test for @ value > 1023
  	jp	nc,FCERR	;208E FC error if @ position > 1023
@@ -9307,7 +9321,7 @@ ENDNUM:	pop	hl		;2db5
 	ld	b,e		;2dc2
 	ld	a,b		;2dc3
 	add	a,c		;2dc4
-	cp	$19		;2dc5
+	cp	25		;2dc5 - total number of characters in Register A is greater than 24
 	jp	nc,FCERR	;2dc7
 	ld	a,d		;2dca
 	or	$80		;2dcb
@@ -9451,7 +9465,7 @@ LLED:	pop	hl		;2e7c
 	ld	a,SPACE		;2e81
 	call	OUTDO		;2e83
 	ld	hl,(BUFPNT)	;2e86
-	ld	a,$0E		;2e89
+	ld	a,CURON		;2e89 -  the “turn on the cursor” character
 	call	OUTDO		;2e8b
 	push	hl		;2e8e
 	ld	c,$FF		;2e8f
@@ -9630,7 +9644,7 @@ IED:	call	INCHR		;2f7d
 	jr	z,TYPARW	;2f86
 	cp	CRET		;2f88
 	jp	z,CRED		;2f8a
-	cp	$1B		;2f8d
+	cp	MOVEU		;2f8d - Up arrow
 	ret	z		;2f8f
 	jr	nz,NTARRW	;2f90
 ; ----------------------------------------------------------------------
