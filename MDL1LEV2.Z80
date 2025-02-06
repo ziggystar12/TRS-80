@@ -152,6 +152,18 @@ SPACE:	.EQU 	$20
 SEMICO	.EQU	$3B	; semicolin. Note ';' in code; was breaking some assemblers
 ;
 ; ======================================================================
+; MACROS
+; ======================================================================
+;
+#DEFINE	SYNTAX(char)	rst 08h\ .DB char
+#DEFINE	GETCHR		rst 10h
+#DEFINE	CPDEHL		rst 18h
+#DEFINE	TSTDAT		rst 20h
+#DEFINE	DOSCAL		rst 28h
+#DEFINE	LDEBUG		rst 30h
+#DEFINE	INTERR		rst 38h
+;
+; ======================================================================
 ;   START OF PROGRAM CODE
 ; ----------------------------------------------------------------------
 ;	.ORG	$0000	; IMPLICT IN STANALONE ROM BUILD (commented out)
@@ -169,7 +181,7 @@ rst00:	di
 	jp	mRST1		;0005
 ;
 ; ======================================================================
-; 0008H (RST 8H) - Compare Symbol
+; 0008H (RST 8H) - Compare Symbol - SYMBOL
 ;
 ;   Jumps to 4000H. 4000H passes control to 1C96H.
 ;   Compares the symbol in the input string pointed to by HL
@@ -180,7 +192,6 @@ rst00:	di
 ;   match, a syntax error message is given and control returns
 ;   to the Input Phase.
 ; ----------------------------------------------------------------------
-_SYNTAX:
 rst08:	jp	mRST1		;0008
 ;
 ; ----------------------------------------------------------------------
@@ -195,7 +206,7 @@ _WHERE:	pop	hl		;000b
 _BOOT:	jp	BOOT		;000d
 ;
 ; ======================================================================
-; 0010H (RST 10) – GET A CHARACTER FROM THE BUFFER
+; 0010H (RST 10) – GET A CHARACTER FROM THE BUFFER - GETCHR
 ;
 ;   Loads the next character from the string pointed to by the
 ;   HL register set into the A-register and clears the CARRY
@@ -217,7 +228,7 @@ _GET:	push	bc		;0013
 	jr	COIJ		;0016
 ;
 ; ======================================================================
-; 0018H (RST 18H) Copare DE:HL
+; 0018H (RST 18H) Compare DE:HL - CPDEHL
 ;
 ;   This routine can be called by using RST 18H or CALL 1C90H.
 ;   Numerically compares DE and HL. Will not work for
@@ -237,7 +248,7 @@ _PUT:	push	bc		;001b
 	jr	COIJ		;001e
 ;
 ; ======================================================================
-; 0020H (RST 20H) - Test Data Mode
+; 0020H (RST 20H) - Test Data Mode - TSTDAT
 ;
 ;   This routine jumps to 25D9H through 4009H.
 ;   If the NTF=8 then C=RESET or else C=SET, Z flag will be SET if NTF=3
@@ -254,7 +265,7 @@ _CTL:	push	bc		;0023
 	jr	COIJ		;0026
 ;
 ; ======================================================================
-; 0028H (RST 28H) - DOS Function CALL
+; 0028H (RST 28H) - DOS Function CALL - DOSCAL
 ;
 ;   Jumps to 400CH which contains C9H (RET) under Level II BASIC.
 ;   This vector is only used by Disk BASIC. It is called by the BREAK key routine,
@@ -272,7 +283,7 @@ _KBD:	ld	de,mKDCB	;002b
 	jr	_GET		;002e
 ;
 ; ======================================================================
-; 0030 (RST 30H) - Load DEBUG
+; 0030 (RST 30H) - Load DEBUG - LDEBUG
 
 ;   This CALL loads the DEBUG program and transfers
 ;   control to it. When DEBUG processing is complete, control
@@ -295,7 +306,7 @@ _DSP:	ld	de,mDDCB	;0033 - video device control block.
 	jr	_PUT		;0036
 ;
 ; ======================================================================
-; 0038 (RST 38H) - Interrupt Entry Point
+; 0038 (RST 38H) - Interrupt Entry Point - INTERR
 ;
 ;  This is the system entry point for all interrupts. It contains a
 ;  jump to section of code in the Communications Region
@@ -438,7 +449,7 @@ MEMGET:	ld	hl,MEMMSG	;00b5 - MEMORY SIZE? message
 	call	STROUT		;00b8 - print it
 	call	QINLIN		;00bb - Print a “?” and get input from the keyboard
 	jr	c,MEMGET	;00be - If the BREAK key was pressed, ask again.
-	rst	10h		;00c0
+	GETCHR			;00c0 - rst 10h
 	or	a		;00c1
 	jr	nz,TYPMEM	;00c2 - was a response to the MEMORY SIZE?
 ;
@@ -469,7 +480,7 @@ TYPMEM:	call	LINGET		;00d6
 	jr	nz,MEMGET	;00e5
 USEDEF:	dec	hl		;00e7
 	ld	de,MEMEND+$214	;00e8 - the minimum MEMORY SIZE? response, which is 300 bytes (012CH) past ENBINI
-	rst	18h		;00eb
+	CPDEHL			;00eb
 	jp	c,OMERR		;00ec
 	ld	de,$FFCE	;00ef
 	ld	(MEMSIZ),hl	;00f2
@@ -523,7 +534,7 @@ L3ERR:	ld	e,ERRL3		;012d - Load Register E with the ?L3 ERROR code of 2CH
 ; ----------------------------------------------------------------------
 ; 0132H-0134H –	LEVEL II BASIC POINT COMMAND ENTRY POINT – "GRPHCS" or "POINT"
 ; ----------------------------------------------------------------------
-POINT:	rst	10h		;0132
+POINT:	GETCHR			;0132 - rst 10h
 	xor	a		;0133
 ;
 ; Z-80 Trick! The byte at this memory location, 01H, is there to turn the real instruction
@@ -546,14 +557,12 @@ RESET:	ld	a,$01		;0138
 ;
 ; 013AH-019CH GRAPHICS ROUTINE
 	push	af		;013a
-	rst	08h		;013b
-	.DB	"("		;013c
+	SYNTAX	('(')		;013b - rst 08h
 	call	GETBYT		;013d
 	cp	$80		;0140
 	jp	nc,FCERR	;0142
 	push	af		;0145
-	rst	08h		;0146
-	.DB	','		;0147
+	SYNTAX	(',')		;0146 - rst 08h
 	call	GETBYT		;0148
 	cp	$30		;014b
 	jp	nc,FCERR	;014d
@@ -603,8 +612,7 @@ FND4:	ld	b,a		;017c
 	ld	a,(de)		;0189
 	and	c		;018a
 FINSTB:	ld	(de),a		;018b
-FINPTB:	rst	08h		;018c
-	.DB	")"		;018d
+FINPTB:	SYNTAX	(')')		;018c - rst 08h
 	ret			;018e
 SBIT:	or	c		;018f
 	jr	FINSTB		;0190
@@ -619,7 +627,7 @@ TBIT:	and	c		;0192
 ; ----------------------------------------------------------------------
 ; 019DH-01C8H – LEVEL II BASIC INKEY$ ROUTINE – “INKEY”
 ; ----------------------------------------------------------------------
-INKEY:	rst	10h		;019d
+INKEY:	GETCHR			;019d - rst 10h
 	push	hl		;019e
 	ld	a,(CHARC)	;019f
 	or	a		;01a2
@@ -698,8 +706,7 @@ CTON:	ld	a,(hl)		;01fe
 	ld	a,$00		;0201
 	jr	nz,DEFDRV	;0203
 	call	GETINT		;0205
-	rst	08h		;0208
-	.DB	','		;0209
+	SYNTAX	(',')		;0208 - rst 08h
 	ld	a,e		;020a
 	and	d		;020b
 	add	a,$02		;020c
@@ -867,7 +874,7 @@ SYSTEM:	call	SYSOUT		;02b2
 	call	OUTDO		;02bd
 	call	QINLIN		;02c0
 	jp	c,RESETR
-	rst	10h		;02c6
+	GETCHR			;02c6 - rst 10h
 	jp	z,SNERR		;02c7
 	cp	'/'		;02ca
 	jr	z,GODO		;02cc
@@ -923,7 +930,7 @@ CADRIN:	call	CASIN		;0314
 GODO:	ex	de,hl		;031d
 	ld	hl,(TEMP)	;031e
 	ex	de,hl		;0321
-	rst	10h		;0322
+	GETCHR			;0322 - rst 10h
 	call	nz,LINGET	;0323
 	jr	nz,SYSTEM	;0326
 	ex	de,hl		;0328
@@ -1191,7 +1198,7 @@ KEYRT2:	ld	bc,$0DAC	;044c - delay count (3500)
 	ld	a,d		;0452
 	cp	$01		;0453
 	ret	nz		;0455
-	rst	28h		;0456
+	DOSCAL			;0456
 	ret			;0457
 ;
 ; ======================================================================
@@ -1708,7 +1715,7 @@ INITR:
 	ret			;400F - RST 30H
 	nop
 	nop
-	ei			;4012 - Interrupt
+	ei			;4012 - RST 38H (Interrupt)
 	ret
 	nop
 ; Keyboard DCB
@@ -1734,11 +1741,12 @@ INITR:
 	.DB	0
 	.DB	"P"
 	.DB	"R"
-	jp	$5000		;402d
-	rst	00h		;4030
+;
+	jp	$5000		; 402D - MAKE SYS1 (10) DOS REQUEST
+	rst	00h		; 4030 - DOS REQUEST CODE FOR SYS1
 	nop
 	nop
-	ld	a, 0		;4033
+	ld	a, 0		; 4033 - CALL DEVICE DRIVER ALA DOS
 	ret
 ;
 ; ======================================================================
@@ -2267,7 +2275,7 @@ FLOATR:	ld	hl,FAC		;0969
 ; ----------------------------------------------------------------------
 FNABS:	call	VSIGN		;0977
 	ret	p		;097a
-VNEG:	rst	20h		;097b
+VNEG:	TSTDAT			;097b
 	jp	m,INEG		;097c
 	jp	z,TMERR		;097f
 NNEG:	ld	hl,FAC-1	;0982
@@ -2295,7 +2303,7 @@ CONIA:	ld	l,a		;098d
 ;   After execution A register=00 if ACCumulator=0, A=01 if ACC > 0
 ;   or A=FFH if A < 1. The Flags are also valid.
 ; ----------------------------------------------------------------------
-VSIGN:	rst	20h		;0994
+VSIGN:	TSTDAT			;0994
 	jp	z,TMERR		;0995
 	jp	p,SIGN		;0998
 	ld	hl,(FACLO)	;099b
@@ -2401,7 +2409,7 @@ VMOVAF:	ld	hl,ARGLO	;09fc
 	ld	de,VMOVE	;09ff
 VMOVMF:	push	de		;0a02
 VDFACS:	ld	de,FACLO	;0a03
-	rst	20h		;0a06
+	TSTDAT			;0a06
 	ret	c		;0a07
 	ld	de,DFACLO	;0a08
 	ret			;0a0b
@@ -2528,7 +2536,7 @@ DCOMP:	call	XDCOMP		;0a78
 ;   (Integer=2). If NTF=3 (string) a TM ERROR will be generated and control
 ;   will be passed to BASIC. Every register is affected. No rounding is performed
 ; ----------------------------------------------------------------------
-FRCINT:	rst	20h		;0a7f
+FRCINT:	TSTDAT			;0a7f
 	ld	hl,(FACLO)	;0a80
 	ret	m		;0a83
 	jp	z,TMERR		;0a84
@@ -2569,7 +2577,7 @@ CONIS2:	ld	bc,$9080	;0aa3
 ;   Force the number in the ACCumulator to be a single-precision number.
 ;   Every register is affected.
 ; ----------------------------------------------------------------------
-FRCSNG:	rst	20h		;0ab1
+FRCSNG:	TSTDAT			;0ab1
 	ret	po		;0ab2
 	jp	m,CONSI		;0ab3
 	jp	z,TMERR		;0ab6
@@ -2608,7 +2616,7 @@ CONSIH:	call	VALSNG		;0acf
 ;   or single precision) and convert it to double-precision.
 ;   The result will be in ACC and NTF will be 8.
 ; ----------------------------------------------------------------------
-FRCDBL:	rst	20h		;0adb
+FRCDBL:	TSTDAT			;0adb
 	ret	nc		;0adc
 	jp	z,TMERR		;0add
 	call	m,CONSI		;0ae0
@@ -2635,7 +2643,7 @@ VALSNG:	ld	a,$04		;0aef - single precision number type flag (of 4)
 ; 0AF4H-0AFAH – LEVEL II BASIC STRING CONVERSION ROUTINE – “CHKSTR”
 ;   This routine will force the ACCUmlator to be a STRING. Only Register A is modified.
 ; ----------------------------------------------------------------------
-CHKSTR:	rst	20h		;0af4
+CHKSTR:	TSTDAT			;0af4
 	ret	z		;0af5
 ;
 ; ----------------------------------------------------------------------
@@ -2689,7 +2697,7 @@ DCXBRT:	dec	bc		;0b24
 ;   point number in WRA1. The result is stored in WRA1 and
 ;   the type flag is set to integer.
 ; ----------------------------------------------------------------------
-FNFIX:	rst	20h		;0b26
+FNFIX:	TSTDAT			;0b26
 	ret	m		;0b27
 	call	SIGN		;0b28
 	jp	p,FNINT		;0b2b
@@ -2705,7 +2713,7 @@ FNFIX:	rst	20h		;0b26
 ;   is returned. If the value is negative with a fractional part,
 ;   it is rounded up before truncation. The integer portion is left in A
 ; ----------------------------------------------------------------------
-FNINT:	rst	20h		;0b37
+FNINT:	TSTDAT			;0b37
 	ret	m		;0b38
 	jr	nc,DINT		;0b39
 	jr	z,TMERR		;0b3b
@@ -3406,7 +3414,7 @@ FIN:	xor	a		;0e6c - Z FLAG SET
 	cp	'+'		;0e7e
 	jr	z,FINC		;0e80
 	dec	hl		;0e82
-FINC:	rst	10h		;0e83
+FINC:	GETCHR			;0e83 - rst 10h
 	jp	c,FINDIG	;0e84
 	cp	'.'		;0e87
 	jp	z,FINDP		;0e89
@@ -3425,7 +3433,7 @@ FINEX:	call	FINFRC		;0ea4
 	push	hl		;0ea7
 	ld	hl,FINEC	;0ea8
 	ex	(sp),hl		;0eab
-	rst	10h		;0eac
+	GETCHR			;0eac - rst 10h
 	dec	d		;0ead
 	cp	TKMNUS		;0eae - '-' token
 	ret	z		;0eb0
@@ -3438,7 +3446,7 @@ FINEX:	call	FINFRC		;0ea4
 	ret	z		;0eba
 	dec	hl		;0ebb
 	pop	af		;0ebc
-FINEC:	rst	10h		;0ebd
+FINEC:	GETCHR			;0ebd - rst 10h
 	jp	c,FINEDG	;0ebe
 	inc	d		;0ec1
 	jr	nz,FINE		;0ec2
@@ -3456,7 +3464,7 @@ FINE2:	call	p,FINMUL	;0eca
 	push	hl		;0ed4
 	call	z,VNEG		;0ed5
 	pop	hl		;0ed8
-	rst	20h		;0ed9
+	TSTDAT			;0ed9
 	ret	pe		;0eda
 	push	hl		;0edb
 	ld	hl,POPHRT	;0edc
@@ -3468,7 +3476,7 @@ FINE2:	call	p,FINMUL	;0eca
 ;   This routine checks to see if we have seen TWO decimal points and to set
 ;   the decimal point flag. We jumped here when we found a single decimal point.
 ; ----------------------------------------------------------------------
-FINDP:	rst	20h		;0ee4
+FINDP:	TSTDAT			;0ee4
 	inc	c		;0ee5
 	jr	nz,FINE		;0ee6
 	call	c,FINFRC	;0ee8
@@ -3476,7 +3484,7 @@ FINDP:	rst	20h		;0ee4
 ; ----------------------------------------------------------------------
 ; 0EEE – MATH ROUTINE – “FININT”
 ; ----------------------------------------------------------------------
-FININT:	rst	20h		;0eee
+FININT:	TSTDAT			;0eee
 	jp	p,SNERR		;0eef
 INFINE:	inc	hl		;0ef2
 	jr	FINE		;0ef3
@@ -3508,7 +3516,7 @@ FINFRC:	push	hl		;0efb
 ; ----------------------------------------------------------------------
 FINMUL:	ret	z		;0f0a
 FINMLT:	push	af		;0f0b
-	rst	20h		;0f0c
+	TSTDAT			;0f0c
 	push	af		;0f0d
 	call	po,MUL10	;0f0e
 	pop	af		;0f11
@@ -3524,7 +3532,7 @@ DCRART:	dec	a		;0f16
 FINDIV:	push	de		;0f18
 	push	hl		;0f19
 	push	af		;0f1a
-	rst	20h		;0f1b
+	TSTDAT			;0f1b
 	push	af		;0f1c
 	call	po,DIV10	;0f1d
 	pop	af		;0f20
@@ -3549,11 +3557,11 @@ FINDIG:	push	de		;0f29
 	ld	a,(hl)		;0f2f
 	sub	$30		;0f30
 	push	af		;0f32
-	rst	20h		;0f33
+	TSTDAT			;0f33
 	jp	p,FINDGV	;0f34
 	ld	hl,(FACLO)	;0f37
 	ld	de,$0CCD	;0f3a - 3277 to see if we will overflow
-	rst	18h		;0f3d
+	CPDEHL			;0f3d
 	jr	nc,FINDG2	;0f3e
 	ld	d,h		;0f40
 	ld	e,l		;0f41
@@ -3723,7 +3731,7 @@ FOUTZS:	ld	hl,FBUFFR	;0ff5
 	jr	nz,FOTZS1	;1007
 	ld	b,c		;1009
 FOTZS1:	ld	(hl),c		;100a
-	rst	10h		;100b
+	GETCHR			;100b - rst 10h
 	jr	z,FOTZS4	;100c
 	cp	'E'		;100e
 	jr	z,FOTZS4	;1010
@@ -3804,7 +3812,7 @@ FOFRS2:	dec	hl		;1066
 ;   all FLAGs are set correctly.
 ; ----------------------------------------------------------------------
 FOFLDN:	push	af		;1074
-	rst	20h		;1075
+	TSTDAT			;1075
 	ld	a,$22		;1076
 	adc	a,a		;1078
 	ld	(hl),a		;1079
@@ -3895,7 +3903,7 @@ FOUBE5:	ld	a,(TEMP2)	;10ce
 FOUBE2:	push	af		;10df
 	ld	bc,FOUBE2	;10e0
 	push	bc		;10e3
-	rst	10h		;10e4
+	GETCHR			;10e4 - rst 10h
 	cp	'-'		;10e5
 	ret	z		;10e7
 	cp	'+'		;10e8
@@ -3906,7 +3914,7 @@ FOUBE2:	push	af		;10df
 	cp	'0'		;10ef
 	jr	nz,FOUBE4	;10f1
 	inc	hl		;10f3
-	rst	10h		;10f4
+	GETCHR			;10f4 - rst 10h
 	jr	nc,FOUBE4	;10f5
 	dec	hl		;10f7
 ;
@@ -4129,7 +4137,7 @@ FFXLV2:	push	bc		;11f8
 FONTINV: push	de		;1201
 	xor	a		;1202
 	push	af		;1203
-	rst	20h		;1204
+	TSTDAT			;1204
 	jp	po,FOUNDB	;1205
 FORBIG:	ld	a,(FAC)		;1208
 	cp	$91		;120b
@@ -4146,7 +4154,7 @@ FORBIG:	ld	a,(FAC)		;1208
 ; 1222 – MATH ROUTINE – “FOUNDB”
 ; ----------------------------------------------------------------------
 FOUNDB:	call	FOUNVC		;1222
-FOUNDV1: rst	20h		;1225
+FOUNDV1: TSTDAT			;1225
 	jr	nc,FOUNDV4	;1226
 	ld	bc,$9143	;1228
 	ld	de,$4FF9	;122b
@@ -4178,7 +4186,7 @@ FOUNDV3: pop	af		;124b
 ; 124F – MATH ROUTINE – “FOUNVC”
 ;   This routine will see if the number in the ACCumulator is small enough yet
 ; ----------------------------------------------------------------------
-FOUNVC:	rst	20h		;124f
+FOUNVC:	TSTDAT			;124f
 	jp	pe,FONVC1	;1250
 	ld	bc,$9474	;1253 - the exponent and the MSB of a single precision
 	ld	de,$23F8	;1256 - BC and DE = (single precision) 999,999.5
@@ -4262,7 +4270,7 @@ FOUED1:	dec	c		;129c
 ;   that has been normalized to decimal digits.
 ; ----------------------------------------------------------------------
 FOUTCV:	push	de		;12a4
-	rst	20h		;12a5
+	TSTDAT			;12a5
 	jp	po,FOUTCS	;12a6
 	push	bc		;12a9
 	push	hl		;12aa
@@ -5267,7 +5275,7 @@ LOOPER:	ld	a,(hl)		;193a
 	ex	de,hl		;1948
 	jr	z,POPGOF	;1949
 	ex	de,hl		;194b
-	rst	18h		;194c
+	CPDEHL			;194c
 POPGOF:	ld	bc,$000E	;194d
 	pop	hl		;1950
 	ret	z		;1951
@@ -5284,7 +5292,7 @@ BLTU:	call	REASON		;1955
 BLTUC:	push	bc		;1958
 	ex	(sp),hl		;1959
 	pop	bc		;195a
-BLTLOP:	rst	18h		;195b
+BLTLOP:	CPDEHL			;195b
 	ld	a,(hl)		;195c
 	ld	(bc),a		;195d
 	ret	z		;195e
@@ -5414,7 +5422,7 @@ NOTRAP:	xor	a		;19e3
 	add	hl,de		;19f5
 	ld	a,(hl)		;19f6
 	call	OUTDO		;19f7
-	rst	10h		;19fa
+	GETCHR			;19fa - rst 10h
 	call	OUTDO		;19fb
 	ld	hl,m_ERR	;19fe
 	push	hl		;1a01
@@ -5423,7 +5431,7 @@ NOTRAP:	xor	a		;19e3
 ERRFIN:	call	STROUT		;1a06
 	pop	hl		;1a09
 	ld	de,$FFFE	;1a0a
-	rst	18h		;1a0d
+	CPDEHL			;1a0d
 	jp	z,INIT
 	ld	a,h		;1a11
 	and	l		;1a12
@@ -5481,7 +5489,7 @@ AUTGOD:	ld	hl,(AUTINC)	;1a60
 	jr	c,AUTRES	;1a64
 	push	de		;1a66
 	ld	de,$FFF9	;1a67
-	rst	18h		;1a6a
+	CPDEHL			;1a6a
 	pop	de		;1a6b
 	jr	nc,AUTRES	;1a6c
 	ld	(AUTLIN),hl	;1a6e
@@ -5494,7 +5502,7 @@ NTAUTO:	ld	a,'>'		;1a76
 	call	OUTDO		;1a78
 	call	INLIN		;1a7b
 	jp	c,MAIN		;1a7e
-	rst	10h		;1a81
+	GETCHR			;1a81 - rst 10h
 	inc	a		;1a82
 	dec	a		;1a83
 	jp	z,MAIN		;1a84
@@ -5519,7 +5527,7 @@ EDENT:	push	de		;1a98
 	push	bc		;1aa8
 	xor	a		;1aa9
 	ld	(BFKLFL),a	;1aaa
-	rst	10h		;1aad
+	GETCHR			;1aad - rst 10h
 	or	a		;1aae
 	push	af		;1aaf
 	ex	de,hl		;1ab0
@@ -5611,8 +5619,7 @@ SCNLINE: ld	de,$0000	;1b10
 	call	LINSPC		;1b17
 	push	de		;1b1a
 	jr	z,SNGLIN	;1b1b
-	rst	08h		;1b1d
-	.DB	$CE
+	SYNTAX	(TKMNUS)	;1b1d - rst 08h
 	ld	de,$FFFA	;1b1f
 	call	nz,LINSPC	;1b22
 	jp	nz,SNERR	;1b25
@@ -5639,7 +5646,7 @@ FNLOOP:	ld	b,h		;1b2f
 	inc	hl		;1b39
 	ld	h,(hl)		;1b3a
 	ld	l,a		;1b3b
-	rst	18h		;1b3c
+	CPDEHL			;1b3c
 	ld	h,b		;1b3d
 	ld	l,c		;1b3e
 	ld	a,(hl)		;1b3f
@@ -5808,7 +5815,7 @@ LOPPSI:	inc	de		;1c1d
 	ld	a,b		;1c24
 	cp	$8D		;1c25
 	jr	nz,NTGOTO	;1c27
-	rst	10h		;1c29
+	GETCHR			;1c29 - rst 10h
 	dec	hl		;1c2a
 NTGOTO:	inc	hl		;1c2b
 	ld	a,(hl)		;1c2c
@@ -5949,9 +5956,8 @@ NOTOL:	ex	de,hl		;1cb5
 	push	hl		;1cc0
 	ld	hl,(CURLIN)	;1cc1
 	ex	(sp),hl		;1cc4
-	rst	08h		;1cc5
-	.DB	TKTO
-	rst	20h		;1cc7
+	SYNTAX	(TKTO)		;1cc5 - rst 08h
+	TSTDAT			;1cc7
 	jp	z,TMERR		;1cc8
 	jp	nc,TMERR	;1ccb
 	push	af		;1cce
@@ -5995,7 +6001,7 @@ STPSGN:	pop	hl		;1d0e
 ONEON:	push	bc		;1d0f
 	push	de		;1d10
 	ld	c,a		;1d11
-	rst	20h		;1d12
+	TSTDAT			;1d12
 	ld	b,a		;1d13
 	push	bc		;1d14
 	push	hl		;1d15
@@ -6043,7 +6049,7 @@ GONE4:	ld	a,(hl)		;1d36
 	call	OUTDO		;1d55
 	pop	de		;1d58
 NOTTRC:	ex	de,hl		;1d59
-GONE1:	rst	10h		;1d5a
+GONE1:	GETCHR			;1d5a - rst 10h
 	ld	de,NEWSTT	;1d5b
 	push	de		;1d5e
 GONE3:	ret	z		;1d5f
@@ -6224,15 +6230,15 @@ DEFCON:	call	ISLET		;1e0b
 	sub	$41		;1e13
 	ld	c,a		;1e15
 	ld	b,a		;1e16
-	rst	10h		;1e17
-	cp	$CE		;1e18
+	GETCHR			;1e17 - rst 10h
+	cp	TKMNUS		;1e18 - a "-" TOKEN
 	jr	nz,NOTRNG	;1e1a
-	rst	10h		;1e1c
+	GETCHR			;1e1c - rst 10h
 	call	ISLET		;1e1d
 	ret	c		;1e20
 	sub	$41		;1e21
 	ld	b,a		;1e23
-	rst	10h		;1e24
+	GETCHR			;1e24 - rst 10h
 NOTRNG:	ld	a,b		;1e25
 	sub	c		;1e26
 	ret	c		;1e27
@@ -6249,7 +6255,7 @@ LPDCHG:	ld	(hl),e		;1e30
 	ld	a,(hl)		;1e36
 	cp	','		;1e37
 	ret	nz		;1e39
-	rst	10h		;1e3a
+	GETCHR			;1e3a - rst 10h
 	jr	DEFCON		;1e3b
 ; ----------------------------------------------------------------------
 ; 1E3D-1E44 - EXAMINE VARIABLE - "ISLET"
@@ -6272,7 +6278,7 @@ ISLET:	ld	a,(hl)		;1e3d
 ;   point to the terminating character of the formula on the BASIC
 ;   program line being examined
 ; ----------------------------------------------------------------------
-INTIDX:	rst	10h		;1e45
+INTIDX:	GETCHR			;1e45 - rst 10h
 INTID2:	call	GETIN2		;1e46
 	ret	p		;1e49
 ;
@@ -6309,12 +6315,12 @@ LINSPC:	ld	a,(hl)		;1e4f
 ; ----------------------------------------------------------------------
 LINGET:	dec	hl		;1e5a
 LINGT2:	ld	de,$0000	;1e5b
-MORLIN:	rst	10h		;1e5e
+MORLIN:	GETCHR			;1e5e - rst 10h
 	ret	nc		;1e5f
 	push	hl		;1e60
 	push	af		;1e61
 	ld	hl,SNERR+1	;1e62
-	rst	18h		;1e65
+	CPDEHL			;1e65
 	jp	c,SNERR		;1e66
 	ld	h,d		;1e69
 	ld	l,e		;1e6a
@@ -6341,7 +6347,7 @@ MORLIN:	rst	10h		;1e5e
 CLEAR:	jp	z,CLEARC	;1e7a
 	call	INTID2		;1e7d
 	dec	hl		;1e80
-	rst	10h		;1e81
+	GETCHR			;1e81 - rst 10h
 	ret	nz		;1e82
 	push	hl		;1e83
 	ld	hl,(MEMSIZ)	;1e84
@@ -6355,7 +6361,7 @@ CLEAR:	jp	z,CLEARC	;1e7a
 	ld	hl,(VARTAB)	;1e90
 	ld	bc,$0028	;1e93 least amount of space needed for BASIC program variables
 	add	hl,bc		;1e96
-	rst	18h		;1e97
+	CPDEHL			;1e97
 	jp	nc,OMERR	;1e98
 	ex	de,hl		;1e9b
 	ld	(STKTOP),hl	;1e9c
@@ -6393,7 +6399,7 @@ GOTO:	call	LINGET		;1ec2
 GOTO2:	call	REM		;1ec5
 	push	hl		;1ec8
 	ld	hl,(CURLIN)	;1ec9
-	rst	18h		;1ecc
+	CPDEHL			;1ecc
 	pop	hl		;1ecd
 	inc	hl		;1ece
 	call	c,FNLOOP	;1ecf
@@ -6464,13 +6470,12 @@ REMER:	ld	a,(hl)		;1f0e
 ; 1F21-1F6B - LEVEL II BASIC LET ROUTINE - "LET"
 ; ----------------------------------------------------------------------
 LET:	call	PTRGET		;1f21
-	rst	08h		;1f24
-	.DB	TKEQL		;1f25 - Test if the variable name is followed by a = token
+	SYNTAX	(TKEQL)		;1f24 - rst 08h Test if the variable name is followed by a = token
 	ex	de,hl		;1f26
 	ld	(TEMP),hl	;1f27
 	ex	de,hl		;1f2a
 	push	de		;1f2b
-	rst	20h		;1f2c
+	TSTDAT			;1f2c
 	push	af		;1f2d
 	call	FRMEVL		;1f2e
 	pop	af		;1f31
@@ -6487,14 +6492,14 @@ INPCOM:	add	a,$03		;1f33
 	inc	hl		;1f44
 	ld	d,(hl)		;1f45
 	ld	hl,(TXTTAB)	;1f46
-	rst	18h		;1f49
+	CPDEHL			;1f49
 	jr	nc,INBUFC	;1f4a
 	ld	hl,(STKTOP)	;1f4c
-	rst	18h		;1f4f
+	CPDEHL			;1f4f
 	pop	de		;1f50
 	jr	nc,DNTCPY	;1f51
 	ld	hl,(VARTAB)	;1f53
-	rst	18h		;1f56
+	CPDEHL			;1f56
 	jr	nc,DNTCPY	;1f57
 ;
 	.DB	LDANN		;1f58 Z80 Trick - LD A,nn - skip next instruction
@@ -6515,9 +6520,8 @@ COPNUM:	call	VMOVE		;1f66
 ; ----------------------------------------------------------------------
 ONGOTO:	cp	$9E		;1f6c
 	jr	nz,NTOERR	;1f6e
-	rst	10h		;1f70
-	rst	08h		;1f71
-	.DB	TKGOTO
+	GETCHR			;1f70 - rst 10h
+	SYNTAX	(TKGOTO)	;1f71 - rst 08h
 	call	LINGET		;1f73
 	ld	a,d		;1f76
 	or	e		;1f77
@@ -6544,8 +6548,7 @@ NTOERR:	call	GETBYT		;1f95
 	ld	b,a		;1f99
 	cp	$91		;1f9a
 	jr	z,ISGOSU	;1f9c
-	rst	08h		;1f9e
-	.DB	TKGOTO
+	SYNTAX	(TKGOTO)	;1f9e - rst 08h
 	dec	hl		;1fa0
 ISGOSU:	ld	c,e		;1fa1
 LOOPON:	dec	c		;1fa2
@@ -6579,7 +6582,7 @@ RESUME:	ld	de,ONEFLG	;1faf
 ; ----------------------------------------------------------------------
 ; 1FCDH - Part of the RESUME routine - "RESNXT"
 ; ----------------------------------------------------------------------
-RESNXT:	rst	10h		;1fcd
+RESNXT:	GETCHR			;1fcd - rst 10h
 	ret	nz		;1fce
 ; ----------------------------------------------------------------------
 ; 1FCF - This is the RESUME 0 routine - "RESTXT"
@@ -6640,8 +6643,7 @@ AUTO:	ld	de,000AH	;2008
 ; being processed, “10” is in HL, and the initial number is on the STACK.
 	jr	z,SNGAU1	;2013
 	ex	de,hl		;2015
-	rst	08h		;2016
-	.DB	','		;2017
+	SYNTAX	(',')		;2016 - rst 08h
 	ex	de,hl		;2018
 	ld	hl,(AUTINC)	;2019
 	ex	de,hl		;201c
@@ -6673,7 +6675,7 @@ IF:	call	FRMEVL		;2039
 	call	VSIGN		;2049
 	pop	hl		;204c
 	jr	z,FALSIF	;204d
-DOCOND:	rst	10h		;204f
+DOCOND:	GETCHR			;204f - rst 10h
 	jp	c,GOTO		;2050
 	jp	GONE3		;2053
 ;
@@ -6684,7 +6686,7 @@ FALSIF:	ld	d,$01		;2056
 SKPMRF:	call	DATA		;2058
 	or	a		;205b
 	ret	z		;205c
-	rst	10h		;205d
+	GETCHR			;205d - rst 10h
 	cp	TKELSE		;205e - else token
 	jr	nz,SKPMRF	;2060
 	dec	d		;2062
@@ -6709,7 +6711,7 @@ PRINT:	call	FILGET		;206f
 	ld	(PRTFLG),a 	;2079 Set current system device to cassette
 PNOTAT:
 NEWCHR:	dec	hl 		;207C Backspace over previous symbol in code string
-	rst	10h 		;207D Re-examine previous char in code string
+	GETCHR	 		;207D rst 10h Re-examine previous char in code string
 	call	z,CRDO 		;207E If end of string write a Carriage Return
 PRINTC:	jp	z,FINPRT	;2081 If end of string turn off cassette and return
 	or	$20		;2084 Not end of string. Convert possible 40 to 60
@@ -6726,8 +6728,7 @@ PRINTC:	jp	z,FINPRT	;2081 If end of string turn off cassette and return
 	and	$3F		;209B And truncate it to 63
  	ld	(TTYPOS),a 	;209D Then save as current position within line
 	pop	hl		;20A0 Restore code string addr (starting addr of item list)
-	rst	08h		;20A1 But make sure a comma follows the tab position
-	.DB	','
+	SYNTAX	(',')		;20A1 rst 08h But make sure a comma follows the tab position
 	jr	LPRIN1		;20A3 Go get first variable from item list
 PRINTD:	ld	a,(hl)		;20A5 Reload next element from code string
 	cp	TKUSNG		;20A6 Test for USING token
@@ -6758,15 +6759,14 @@ PRINT:	call	FILGET		;206f
 	and	$3F		;2087
 	ld	(TTYPOS),a	;2089
 	pop	hl		;208c
-	rst	08h		;208d
-	.DB	','
+	SYNTAX	(',')		;208d - rst 08h
 PNOTAT:	cp	'#'		;208f
 	jr	nz,NEWCHR	;2091 - Jump if not PRINT#
 	call	CWRTON		;2093
 	ld	a,$80		;2096
 	ld	(PRTFLG),a	;2098
 NEWCHR:	dec	hl		;209b
-	rst	10h		;209c
+	GETCHR			;209c - rst 10h
 	call	z,CRDO		;209d
 PRINTC:	jp	z,FINPRT	;20a0
 	cp	TKUSNG		;20a3 - using token
@@ -6783,7 +6783,7 @@ PRINTC:	jp	z,FINPRT	;20a0
 	push	hl		;20bc
 #ENDIF
 ;
-	rst	20h		;20bd
+	TSTDAT			;20bd
 	jr	z,STRDON	;20be
 	call	FOUT		;20c0
 	call	STRLIT		;20c3
@@ -6865,8 +6865,7 @@ TABER:	call	GTBYTC		;2137 - evaluate the tab number, and return with the result 
 #ENDIF
 ;
 	ld	e,a		;213c
-	rst	08h		;213d
-	.DB	')'
+	SYNTAX	(')')		;213d - rst 08h
 	dec	hl		;213f
 ; ----------------------------------------------------------------------
 	push	hl		;2140
@@ -6888,7 +6887,7 @@ REPOUT:	call	OUTDO		;215e
 	dec	b		;2161
 	jr	nz,REPOUT	;2162
 NOTABR:	pop	hl		;2164
-	rst	10h		;2165
+	GETCHR			;2165 - rst 10h
 	jp	PRINTC		;2166
 ; ----------------------------------------------------------------------
 ; 2169 – FINPRT - This routine resets the device type flag at 409CH to
@@ -6896,9 +6895,11 @@ NOTABR:	pop	hl		;2164
 ;        necessary. CALLs Disk BASIC link at 41BEH prior to return.
 ; ----------------------------------------------------------------------
 FINPRT:
+#IFNDEF _EMBED
 	ld	a,(PRTFLG)	;2169 - current output device flag
 	or	a		;216c - check the flags
 	call	m,CTOFF		;216d - If cassette, turn it off
+#ENDIF
 	xor	a		;2170
 	ld	(PRTFLG),a	;2171
 	call	FINDRT		;2174
@@ -6956,8 +6957,7 @@ INTCAS:	ld	bc,NOTQTI	;21c9
 	cp	$22		;21cd
 	ret	nz		;21cf
 	call	STRLTI		;21d0
-	rst	08h		;21d3
-	.DB	SEMICO		;21d4 - compare with semicolin ';'
+	SYNTAX	(SEMICO)	;21d3 - rst 08h compare with semicolin ';'
 	push	hl		;21d5
 	call	STRPRT		;21d6
 	pop	hl		;21d9
@@ -6987,8 +6987,7 @@ INPCON:	xor	a		;21f4
 	ld	(FLGINP),a	;21f5
 	ex	(sp),hl		;21f8
 	jr	LOPDAT		;21f9
-LOPDT2:	rst	08h		;21fb
-	.DB	','		;21fc
+LOPDT2:	SYNTAX	(',')		;21fb - rst 08h
 LOPDAT:	call	PTRGET		;21fd
 	ex	(sp),hl		;2200
 	push	de		;2201
@@ -7016,10 +7015,10 @@ LOPDAT:	call	PTRGET		;21fd
 	jp	z,DATAH		;2229
 	push	de		;222c
 DATBK:	call	FILIND		;222d
-	rst	20h		;2230
+	TSTDAT			;2230
 	push	af		;2231
 	jr	nz,NUMINS	;2232
-	rst	10h		;2234
+	GETCHR			;2234 - rst 10h
 	ld	d,a		;2235
 	ld	b,a		;2236
 	cp	$22		;2237
@@ -7034,7 +7033,7 @@ DOASIG:	pop	af		;2243
 	ex	(sp),hl		;2248
 	push	de		;2249
 	jp	INPCOM		;224a
-NUMINS:	rst	10h		;224d
+NUMINS:	GETCHR			;224d - rst 10h
 	pop	af		;224e
 	push	af		;224f
 	ld	bc,DOASIG	;2250
@@ -7042,13 +7041,13 @@ NUMINS:	rst	10h		;224d
 	jp	c,FIN		;2254
 	jp	nc,FINDBL	;2257
 STRDN2:	dec	hl		;225a
-	rst	10h		;225b
+	GETCHR			;225b - rst 10h
 	jr	z,TRMOK		;225c
 	cp	','		;225e
 	jp	nz,TRMNOK	;2260
 TRMOK:	ex	(sp),hl		;2263
 	dec	hl		;2264
-	rst	10h		;2265
+	GETCHR			;2265 - rst 10h
 	jp	nz,LOPDT2	;2266
 	pop	de		;2269
 ; ----------------------------------------------------------------------
@@ -7097,7 +7096,7 @@ DATFND:	or	a		;2299
 	ex	de,hl		;22a9
 	ld	(DATLIN),hl	;22aa
 	ex	de,hl		;22ad
-NOWLIN:	rst	10h		;22ae
+NOWLIN:	GETCHR			;22ae - rst 10h
 	cp	TKDATA		;22af - data token
 	jr	nz,DATLOP	;22b1
 	jp	DATBK		;22b3
@@ -7190,7 +7189,7 @@ LOOPDN:	ld	sp,hl		;2324
 	ld	a,(hl)		;232b
 	cp	','		;232c
 	jp	nz,NEWSTT	;232e
-	rst	10h		;2331
+	GETCHR			;2331 - rst 10h
 	call	NEXTC		;2332
 ;
 ; ----------------------------------------------------------------------
@@ -7200,8 +7199,7 @@ LOOPDN:	ld	sp,hl		;2324
 ;   HL points to the terminator, and ACC holds the result. Important to
 ;   note that on exit Register A does not necessarily reflect the term char
 ; ----------------------------------------------------------------------
-FRMPRN:	rst	08h		;2335
-	.DB	'('		;2336
+FRMPRN:	SYNTAX	('(')		;2335 - rst 08h
 FRMEVL:	dec	hl		;2337
 FRMCHK:	ld	d,$00		;2338
 LPOPER:	push	de		;233a
@@ -7224,7 +7222,7 @@ LOPREL:	sub	TKGT		;234d - greatr than > Token
 	ld	d,a		;235a
 	jp	c,SNERR		;235b
 	ld	(TEMP3),hl	;235e
-	rst	10h		;2361
+	GETCHR			;2361 - rst 10h
 	jr	LOPREL		;2362
 ENDREL:	ld	a,d		;2364
 	or	a		;2365
@@ -7345,7 +7343,7 @@ FINREL:	ld	a,b		;23ec
 	ld	de,$6404	;23f2
 	ld	hl,DOCMP	;23f5
 	push	hl		;23f8
-	rst	20h		;23f9
+	TSTDAT			;23f9
 	jp	nz,NUMREL	;23fa
 	ld	hl,(FACLO)	;23fd
 	push	hl		;2400
@@ -7477,7 +7475,7 @@ INTDIV:	push	hl		;2490
 ; ----------------------------------------------------------------------
 ; 249F – Evaluate a Variable, Constant, or Function Call – “EVAL”
 ; ----------------------------------------------------------------------
-EVAL:	rst	10h		;249f
+EVAL:	GETCHR			;249f - rst 10h
 	ld	e,ERRMO		;24a0
 	jp	z,ERROR		;24a2
 	jp	c,FIN		;24a5
@@ -7497,7 +7495,7 @@ EVAL:	rst	10h		;249f
 	jp	z,DVAND		;24c8 - & Disk Basic Vector
 	cp	TKERR		;24cb
 	jr	nz,NTERC	;24cd
-	rst	10h		;24cf
+	GETCHR			;24cf - rst 10h
 	ld	a,(ERRFLG)	;24d0
 	push	hl		;24d3
 	call	SNGFLT		;24d4
@@ -7505,7 +7503,7 @@ EVAL:	rst	10h		;249f
 	ret			;24d8
 NTERC:	cp	TKERL		;24d9 - ERL token
 	jr	nz,NTERL	;24db
-	rst	10h		;24dd
+	GETCHR			;24dd - rst 10h
 	push	hl		;24de
 	ld	hl,(ERRLIN)	;24df
 	call	INEG2		;24e2
@@ -7516,12 +7514,10 @@ NTERC:	cp	TKERL		;24d9 - ERL token
 ; ----------------------------------------------------------------------
 NTERL:	cp	TKVARP		;24e7 - varptr
 	jr	nz,NTVARP	;24e9
-	rst	10h		;24eb
-	rst	08h		;24ec
-	.DB	'('
+	GETCHR			;24eb - rst 10h
+	SYNTAX	('(')		;24ec - rst 08h
 	call	PTRGET		;24ee
-VARRET:	rst	08h		;24f1
-	.DB	')'
+VARRET:	SYNTAX	(')')		;24f1 - rst 08h
 	push	hl		;24f3
 	ex	de,hl		;24f4
 	ld	a,h		;24f5
@@ -7557,8 +7553,7 @@ NTVARP:	cp	TKUSR		;24ff - USR Function
 ; other possibility is that it is a function in parenthesis – “PARCHK”
 ; ----------------------------------------------------------------------
 PARCHK:	call	FRMPRN		;252c
-	rst	08h		;252f
-	.DB	')'
+	SYNTAX	(')')		;252f - rst 08h
 	ret			;2531
 ; ----------------------------------------------------------------------
 ; 2532 – Binary Minus Routine – “DOMIN”
@@ -7577,7 +7572,7 @@ ISVAR:	call	PTRGET		;2540
 RETVAR:	push	hl		;2543
 	ex	de,hl		;2544
 	ld	(FACLO),hl	;2545
-	rst	20h		;2548
+	TSTDAT			;2548
 	call	nz,VMOVFM	;2549
 	pop	hl		;254c
 	ret			;254d
@@ -7588,14 +7583,13 @@ ISFUN:	ld	b,$00		;254e
 	rlca			;2550
 	ld	c,a		;2551
 	push	bc		;2552
-	rst	10h		;2553
+	GETCHR			;2553 - rst 10h
 	ld	a,c		;2554
 	cp	$41		;2555
 	jr	c,OKNORM	;2557
 	call	FRMPRN		;2559
 ; ----------------------------------------------------------------------
-	rst	08h		;255c
-	.DB	','		;255d
+	SYNTAX	(',')		;255c - rst 08h
 	call	CHKSTR		;255e
 	ex	de,hl		;2561
 	ld	hl,(FACLO)	;2562
@@ -7753,10 +7747,9 @@ NOTOR:	ld	a,e		;25fd
 ; 2603 – Dimension and Variable Searching Routine – “DIMCON”
 ; ----------------------------------------------------------------------
 DIMCON:	dec	hl		;2603
-	rst	10h		;2604
+	GETCHR			;2604 - rst 10h
 	ret	z		;2605
-	rst	08h		;2606
-	.DB	','		;2607
+	SYNTAX	(',')		;2606 - rst 08h
 ;
 ; ----------------------------------------------------------------------
 ; 2608 – DIM logic – “DIM”
@@ -7779,12 +7772,12 @@ PTRGET:	xor	a		;260d
 	jp	c,SNERR		;2615
 	xor	a		;2618
 	ld	c,a		;2619
-	rst	10h		;261a
+	GETCHR			;261a - rst 10h
 	jr	c,ISSEC		;261b
 	call	ISLET		;261d
 	jr	c,NOSEC		;2620
 ISSEC:	ld	c,a		;2622
-EATEM:	rst	10h		;2623
+EATEM:	GETCHR			;2623 - rst 10h
 	jr	c,EATEM		;2624
 	call	ISLET		;2626
 	jr	nc,EATEM	;2629
@@ -7816,7 +7809,7 @@ NOSEC:	ld	de,HAVTYP	;262b
 	ret			;2651
 HAVTYP:	ld	a,d		;2652
 	ld	(VALTYP),a	;2653
-	rst	10h		;2656
+	GETCHR			;2656 - rst 10h
 	ld	a,(SUBFLG)	;2657
 	or	a		;265a
 	jp	nz,NOARYS	;265b
@@ -7830,7 +7823,7 @@ NOARYS:	xor	a		;2664
 	ld	hl,(VARTAB)	;266a
 LOPFND:	ex	de,hl		;266d
 	ld	hl,(ARYTAB)	;266e
-	rst	18h		;2671
+	CPDEHL			;2671
 	pop	hl		;2672
 	jr	z,NOTFNS	;2673
 	ld	a,(de)		;2675
@@ -7860,10 +7853,10 @@ NOTFNS:	ld	a,h		;268e
 	push	af		;2691
 	push	de		;2692
 	ld	de,VARRET	;2693
-	rst	18h		;2696
+	CPDEHL			;2696
 	jr	z,VARNOT	;2697
 	ld	de,RETVAR	;2699
-	rst	18h		;269c
+	CPDEHL			;269c
 	pop	de		;269d
 	jr	z,FINZER	;269e
 	pop	af		;26a0
@@ -7889,7 +7882,7 @@ NOTFNS:	ld	a,h		;268e
 	ld	(ARYTAB),hl	;26bb
 ZEROER:	dec	hl		;26be
 	ld	(hl),$00	;26bf
-	rst	18h		;26c1
+	CPDEHL			;26c1
 	jr	nz,ZEROER	;26c2
 	pop	de		;26c4
 	ld	(hl),e		;26c5
@@ -7917,7 +7910,7 @@ FINZER:	ld	(FAC),a		;26d5
 	ld	h,a		;26d9
 	ld	l,a		;26da
 	ld	(FACLO),hl	;26db
-	rst	20h		;26de
+	TSTDAT			;26de
 	jr	nz,POPHR2	;26df
 	ld	hl,m_REDDY-1	;26e1
 	ld	(FACLO),hl	;26e4
@@ -7947,8 +7940,7 @@ INDLOP:	push	de		;26ef
 	ld	a,(hl)		;26fc
 	cp	','		;26fd
 	jr	z,INDLOP	;26ff
-	rst	08h		;2701
-	.DB	')'
+	SYNTAX	(')')		;2701 - rst 08h
 	ld	(TEMP2),hl	;2703
 	pop	hl		;2706
 	ld	(DIMFLG),hl	;2707
@@ -7961,7 +7953,7 @@ LOPFDA:	add	hl,de		;270f
 	ex	de,hl		;2710
 	ld	hl,(STREND)	;2711
 	ex	de,hl		;2714
-	rst	18h		;2715
+	CPDEHL			;2715
 	ld	a,(VALTYP)	;2716
 	jr	z,NOTFDD	;2719
 	cp	(hl)		;271b
@@ -8041,7 +8033,7 @@ NOTDIM:	ld	(hl),c		;2763
 	ld	(STREND),hl	;2779
 ZERITA:	dec	hl		;277c
 	ld	(hl),$00	;277d
-	rst	18h		;277f
+	CPDEHL			;277f
 	jr	nz,ZERITA	;2780
 	inc	bc		;2782
 	ld	d,a		;2783
@@ -8077,7 +8069,7 @@ INLPNM:	pop	hl		;279a
 	inc	hl		;279e
 	ex	(sp),hl		;279f
 	push	af		;27a0
-	rst	18h		;27a1
+	CPDEHL			;27a1
 	jp	nc,BSERR	;27a2
 	call	UMULT		;27a5
 	add	hl,de		;27a8
@@ -8115,7 +8107,7 @@ MEM:	xor	a		;27c9
 	ld	(VALTYP),a	;27cb
 	call	FNFRE		;27ce
 	pop	hl		;27d1
-	rst	10h		;27d2
+	GETCHR			;27d2 - rst 10h
 	ret			;27d3
 ; ----------------------------------------------------------------------
 ; 27D4-27F4 – LEVEL II BASIC FRE ROUTINE – “FNFRE”
@@ -8124,7 +8116,7 @@ FNFRE:	ld	hl,(STREND)	;27d4
 	ex	de,hl		;27d7
 	ld	hl,$0000	;27d8
 	add	hl,sp		;27db
-	rst	20h		;27dc
+	TSTDAT			;27dc
 	jr	nz,GIVDBL	;27dd
 	call	FREFAC		;27df
 	call	GARBA2		;27e2
@@ -8151,7 +8143,7 @@ GIVINT:	ld	h,a		;27fa
 ; 27FE-2818 – LEVEL II BASIC USR(x) ROUTINE – “USRFN”
 ; ----------------------------------------------------------------------
 USRFN:	call	USROUT		;27fe - dos usr n handling
-	rst	10h		;2801
+	GETCHR			;2801 - rst 10h
 	call	PARCHK		;2802
 	push	hl		;2805
 	ld	hl,POPHRT	;2806
@@ -8268,7 +8260,7 @@ PUTNEW:	ld	de,DSCTMP	;2884
 	ld	(VALTYP),a	;2891
 	call	VMOVE		;2894
 	ld	de,FRETOP	;2897
-	rst	18h		;289a
+	CPDEHL			;289a
 	ld	(TEMPPT),hl	;289b
 	pop	hl		;289e
 	ld	a,(hl)		;289f
@@ -8324,7 +8316,7 @@ TRYGI2:	pop	af		;28c1
 	ld	b,$FF		;28cc
 	add	hl,bc		;28ce
 	inc	hl		;28cf
-	rst	18h		;28d0
+	CPDEHL			;28d0
 	jr	c,GARBAG	;28d1
 	ld	(FRETOP),hl	;28d3
 	inc	hl		;28d6
@@ -8351,14 +8343,14 @@ FNVVAR:	ld	(FRETOP),hl	;28e9
 TVAR:	ex	de,hl		;28f7
 	ld	hl,(TEMPPT)	;28f8
 	ex	de,hl		;28fb
-	rst	18h		;28fc
+	CPDEHL			;28fc
 	ld	bc,TVAR		;28fd
 	jp	nz,DVAR2	;2900
 	ld	hl,(VARTAB)	;2903
 SVAR:	ex	de,hl		;2906
 	ld	hl,(ARYTAB)	;2907
 	ex	de,hl		;290a
-	rst	18h		;290b
+	CPDEHL			;290b
 	jr	z,ARYVAR	;290c
 	ld	a,(hl)		;290e
 	inc	hl		;290f
@@ -8376,7 +8368,7 @@ ARYVA2:	pop	bc		;2920
 ARYVAR:	ex	de,hl		;2921
 	ld	hl,(STREND)	;2922
 	ex	de,hl		;2925
-	rst	18h		;2926
+	CPDEHL			;2926
 	jp	z,GRBPAS	;2927
 	ld	a,(hl)		;292a
 	inc	hl		;292b
@@ -8395,7 +8387,7 @@ ARYVAR:	ex	de,hl		;2921
 ARYSTR:	ex	de,hl		;293f
 	ld	hl,(TEMP3)	;2940
 	ex	de,hl		;2943
-	rst	18h		;2944
+	CPDEHL			;2944
 	jr	z,ARYVAR	;2945
 	ld	bc,ARYSTR	;2947
 DVAR2:	push	bc		;294a
@@ -8410,13 +8402,13 @@ DVAR:	xor	a		;294b
 	ld	b,h		;2953
 	ld	c,l		;2954
 	ld	hl,(FRETOP)	;2955
-	rst	18h		;2958
+	CPDEHL			;2958
 	ld	h,b		;2959
 	ld	l,c		;295a
 	ret	c		;295b
 	pop	hl		;295c
 	ex	(sp),hl		;295d
-	rst	18h		;295e
+	CPDEHL			;295e
 	ex	(sp),hl		;295f
 	push	hl		;2960
 	ld	h,b		;2961
@@ -8531,7 +8523,7 @@ FRETMP:	call	FRETMS		;29de
 	dec	de		;29e6
 	ld	c,(hl)		;29e7
 	ld	hl,(FRETOP)	;29e8
-	rst	18h		;29eb
+	CPDEHL			;29eb
 	jr	nz,NOTLST	;29ec
 	ld	b,a		;29ee
 	add	hl,bc		;29ef
@@ -8546,7 +8538,7 @@ FRETMS:	ld	hl,(TEMPPT)	;29f5
 	dec	hl		;29fa
 	ld	c,(hl)		;29fb
 	dec	hl		;29fc
-	rst	18h		;29fd
+	CPDEHL			;29fd
 	ret	nz		;29fe
 	ld	(TEMPPT),hl	;29ff
 	ret			;2a02
@@ -8587,19 +8579,16 @@ FINBCK:	pop	bc		;2a2b
 ; ----------------------------------------------------------------------
 ; 2A2F-2A60 – LEVEL II BASIC STRING$ ROUTINE – “STRNGS”
 ; ----------------------------------------------------------------------
-STRNGS:	rst	10h		;2a2f
-	rst	08h		;2a30
-	.DB	'('		;2a31
+STRNGS:	GETCHR			;2a2f - rst 10h
+	SYNTAX	('(')		;2a30 - rst 08h
 	call	GETBYT		;2a32
 	push	de		;2a35
-	rst	08h		;2a36
-	.DB	','		;2a37
+	SYNTAX	(',')		;2a36 - rst 08h
 	call	FRMEVL		;2a38
-	rst	08h		;2a3b
-	.DB	')'		;2a3c
+	SYNTAX	(')')		;2a3b - rst 08h
 	ex	(sp),hl		;2a3d
 	push	hl		;2a3e
-	rst	20h		;2a3f
+	TSTDAT			;2a3f
 	jr	z,STRSTR	;2a40
 	call	CONINT		;2a42
 	jr	CALSPA		;2a45
@@ -8682,11 +8671,9 @@ FNMID:	ex	de,hl		;2a9a
 	ld	e,$FF		;2aa5
 	cp	$29		;2aa7
 	jr	z,MID2		;2aa9
-	rst	08h		;2aab
-	.DB	','
+	SYNTAX	(',')		;2aab - rst 08h
 	call	GETBYT		;2aad
-MID2:	rst	08h		;2ab0
-	.DB	')'
+MID2:	SYNTAX	(')')		;2ab0 - rst 08h
 	pop	af		;2ab2
 	ex	(sp),hl		;2ab3
 	ld	bc,LEFT2	;2ab4
@@ -8734,8 +8721,7 @@ FNVAL:	call	LEN1		;2ac5
 ;   DE and B each have the byte count.
 ; ----------------------------------------------------------------------
 PREAM:	ex	de,hl		;2adf
-	rst	08h		;2ae0
-	.DB	')'		;2ae1
+	SYNTAX	(')')		;2ae0 - rst 08h
 PREAM2:	pop	bc		;2ae2
 	pop	de		;2ae3
 	push	bc		;2ae4
@@ -8766,7 +8752,7 @@ FNOUT:	call	SETIO		;2afb
 ; 2B01-2B0D – EVALUATE EXPRESSION ROUTINE “GETINT”
 ;   This evaluates an expression and leaves the result in DE as an integer.
 ; ----------------------------------------------------------------------
-GETINT:	rst	10h		;2b01
+GETINT:	GETCHR			;2b01 - rst 10h
 GETIN2:	call	FRMEVL		;2b02
 ;
 ; ----------------------------------------------------------------------
@@ -8792,14 +8778,13 @@ SETIO:	call	GETBYT		;2b0e
 ; 2B17-2B1A – CHECK SYNTAX ROUTINE – This checks to see if the next character
 ; is a “ and contnues on to 2B1CH if it is, and errors out if it isn’t.
 ; ----------------------------------------------------------------------
-	rst	08h		;2b17
-	.DB	','		;2b18
+	SYNTAX	(',')		;2b17 - rst 08h
 	jr	GETBYT		;2b19
 ;
 ; ----------------------------------------------------------------------
 ; 2B1B-2B28 – EVALUATE EXPRESSION ROUTINE – This is called by PRINT TAB – “GTBYTC”.
 ; ----------------------------------------------------------------------
-GTBYTC:	rst	10h		;2b1b
+GTBYTC:	GETCHR			;2b1b - rst 10h
 ;
 ; ----------------------------------------------------------------------
 ; 2B1C – Common Conversion Routine – “GETBYT”
@@ -8815,7 +8800,7 @@ GETBYT:	call	FRMEVL		;2b1c
 CONINT:	call	INTFR2		;2b1f
 	jp	nz,FCERR	;2b22
 	dec	hl		;2b25
-	rst	10h		;2b26
+	GETCHR			;2b26 - rst 10h
 	ld	a,e		;2b27
 	ret			;2b28
 ;
@@ -8855,7 +8840,7 @@ LIST4:	ld	hl,$FFFF	;2b33
 	push	bc		;2b4f
 	ex	(sp),hl		;2b50
 	ex	de,hl		;2b51
-	rst	18h		;2b52
+	CPDEHL			;2b52
 	pop	bc		;2b53
 	jp	c,STPRDY	;2b54
 	ex	(sp),hl		;2b57
@@ -8946,7 +8931,7 @@ DELETE:	call	SCNLINE		;2bc6
 	ld	e,l		;2bd2
 	ex	(sp),hl		;2bd3
 	push	hl		;2bd4
-	rst	18h		;2bd5
+	CPDEHL			;2bd5
 FCERRG:	jp	nc,FCERR	;2bd6
 	ld	hl,m_REDDY	;2bd9
 	call	STROUT		;2bdc
@@ -8959,7 +8944,7 @@ MLOOP:	ld	a,(de)		;2be8
 	ld	(bc),a		;2be9
 	inc	bc		;2bea
 	inc	de		;2beb
-	rst	18h		;2bec
+	CPDEHL			;2bec
 	jr	nz,MLOOP	;2bed
 	ld	h,b		;2bef
 	ld	l,c		;2bf0
@@ -8983,7 +8968,7 @@ CSAVE:	call	CWRTON		;2bf5
 LOPSCO:	ld	a,(de)		;2c12
 	inc	de		;2c13
 	call	CASOUT		;2c14
-	rst	18h		;2c17
+	CPDEHL			;2c17
 	jr	nz,LOPSCO	;2c18
 	call	CTOFF		;2c1a
 	pop	hl		;2c1d
@@ -9032,7 +9017,7 @@ CLOADP:	cpl			;2c29
 	inc	hl		;2c2a
 	push	af		;2c2b
 	dec	hl		;2c2c
-	rst	10h		;2c2d
+	GETCHR			;2c2d - rst 10h
 	ld	a,$00		;2c2e
 	jr	z,CLNONM	;2c30
 	call	FRMEVL		;2c32
@@ -9121,8 +9106,7 @@ PEEK:	call	FRCINT		;2caa
 ; ----------------------------------------------------------------------
 POKE:	call	GETIN2		;2cb1
 	push	de		;2cb4
-	rst	08h		;2cb5
-	.DB	','		;2cb6
+	SYNTAX	(',')		;2cb5 - rst 08h
 	call	GETBYT		;2cb7
 	pop	de		;2cba
 	ld	(de),a		;2cbb
@@ -9138,8 +9122,7 @@ POKE:	call	GETIN2		;2cb1
 ; ----------------------------------------------------------------------
 PRINUS:	call	FRMCHK		;2cbd
 	call	CHKSTR		;2cc0
-	rst	08h		;2cc3
-	.DB	SEMICO		;2cc4 - compare with semicolin ';'
+	SYNTAX	(SEMICO)	;2cc3 - rst 08h compare with semicolin ';'
 	ex	de,hl		;2cc5
 	ld	hl,(FACLO)	;2cc6
 	jr	INIUS		;2cc9
@@ -9336,7 +9319,7 @@ ENDNUM:	pop	hl		;2db5
 	call	STROUT		;2dd0
 FNSTRF:	pop	hl		;2dd3
 	dec	hl		;2dd4
-	rst	10h		;2dd5
+	GETCHR			;2dd5 - rst 10h
 	scf			;2dd6
 	jr	z,CRDNUS	;2dd7
 	ld	(FLGINP),a	;2dd9
@@ -9344,7 +9327,7 @@ FNSTRF:	pop	hl		;2dd3
 	jr	z,SEMUSN	;2dde
 	cp	','		;2de0
 	jp	nz,SNERR	;2de2
-SEMUSN:	rst	10h		;2de5
+SEMUSN:	GETCHR			;2de5 - rst 10h
 CRDNUS:	pop	bc		;2de6
 	ex	de,hl		;2de7
 	pop	hl		;2de8
