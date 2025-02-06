@@ -116,6 +116,7 @@ LDDNN:	.EQU 	$16	; LD D,nn - skipping next byte
 LDHLNN:	.EQU 	$21	; LD HL,nnnn - skip 2 bytes
 LDLNN:	.EQU 	$2E	; LD L,nn - skip 1 byte
 LDANN:	.EQU 	$3E	; LD A,nn - skip 1 byte
+JPNN:	.EQU 	$C3	; JP nnnn
 JPZNN:	.EQU 	$CA	; JP Z,nnnn - skip 2 bytes
 JPNCNN:	.EQU 	$D2	; JP NC,nnnn - skip 2 bytes
 JPCNN:	.EQU 	$DA	; JP C,nnnn - skips 2 bytes
@@ -385,18 +386,20 @@ INIT2:	ld	de,FDIVC	;0075
 ; This loads 40A7H with the I/O buffer location address 41E8H.
 ; (40A7H is the I/O buffer pointer and can be changed to relocate the buffer.)
 	ld	(BUFPNT),hl	;008b
+;
 ; Fills the RAM locations pointing to all 28 DOS BASIC commands,
-; set them to point to ?L3 ERROR,
-	ld	de,L3ERR	;008e
-	ld	b,$1C		;0091
-	ld	hl,ERCALL	;0093
-ERLOPS:	ld	(hl),$C3	;0096
+; set them to point to ?L3 ERROR, (4152-41A5)
+	ld	de,L3ERR	;008e - address of L3 error code
+	ld	b,$1C		;0091 - there are 28 DOS BASIC commands
+	ld	hl,ERCALL	;0093 - address in RAM of lookup table
+ERLOPS:	ld	(hl),JPNN	;0096 - opcode (1st byte) for JP nnnn
 	inc	hl		;0098
-	ld	(hl),e		;0099
+	ld	(hl),e		;0099 - address low order
 	inc	hl		;009a
-	ld	(hl),d		;009b
+	ld	(hl),d		;009b - address high order
 	inc	hl		;009c
 	djnz	ERLOPS		;009d
+;
 	ld	b,$15		;009f
 LOPRTS:	ld	(hl),$C9	;00a1
 	inc	hl		;00a3
@@ -662,7 +665,7 @@ CT3:	djnz	CT3		;01f5
 ; 01F8H-01FDH – CASSETTE ROUTINE (TURN OFF CASSETTE) – “CTOFF”
 ; ----------------------------------------------------------------------
 CTOFF:	push	hl		;01f8
-	ld	hl,$FB00	;01f9
+	ld	hl,$FB00	;01f9 - And Or Flags, turn off cassette
 	jr	CTCHG2		;01fc
 ;
 ; ----------------------------------------------------------------------
@@ -3749,7 +3752,7 @@ FOUFRV:	cp	$05		;103d
 	ld	d,a		;1043
 	inc	d		;1044
 	call	FONTINV		;1045
-	ld	bc,LDATIN+2	;1048
+	ld	bc,$3000	;1048 - B=3 (decimal point count), C=0 (comma count)
 	add	a,d		;104b
 	jp	m,FOFRS1	;104c
 	inc	d		;104f
@@ -6018,14 +6021,14 @@ GONE2:	sub	$80		;1d60
 	rlca			;1d6a
 	ld	c,a		;1d6b
 	ld	b,$00		;1d6c
-	ex	de,hl		;1d6e
+	ex	de,hl		;1d6e save the BASIC program pointer DE into HL
 	ld	hl,STMDSP	;1d6f list of BASIC execution addresses (Statement Dispatch Table)
 	add	hl,bc		;1d72
 	ld	c,(hl)		;1d73
 	inc	hl		;1d74
 	ld	b,(hl)		;1d75
-	push	bc		;1d76
-	ex	de,hl		;1d77
+	push	bc		;1d76 Save execution address in BC to the STACK
+	ex	de,hl		;1d77 restore the BASIC program pointer into DE
 ;
 ; ======================================================================
 ; 1D78-1D90 – RST 0010H CODE – “CHRGTR”
@@ -9755,7 +9758,7 @@ mPDCB:	.EQU	RAM+$25		; Printer Device Block
 ;
 CIOSS:	.EQU	RAM+$33		; call device driver ala dos - CIO$
 KYBTSS:	.EQU	RAM+$36		; Keyboard driver work area (to 403C) - KYB$
-CAST:	.EQU	RAM+$3D		; Video Display Control Attributes
+CAST:	.EQU	RAM+$3D		; Video Display Control Attributes (shadow IO Port 0)
 ;
 TMPSTK:	.EQU	RAM+$7D		; Stack pointer for initial DISK, bootstrap.
 ;
