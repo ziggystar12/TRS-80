@@ -493,7 +493,7 @@ HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",CRET,0
 #ENDIF
 ;
 ; ----------------------------------------------------------------------
-; 012DH-0131H – ?L3 ERROR ROUTINE – "L3ERR"
+; 012DH – ?L3 ERROR ENTRY POINT – "L3ERR"
 ; ----------------------------------------------------------------------
 L3ERR:	ld	e,ERRL3		;012d - Load Register E with the ?L3 ERROR code of 2CH
 	jp	ERROR		;012f
@@ -1868,7 +1868,7 @@ ROUNDA:	inc	e		;07a8
 	inc	(hl)		;07b0
 	ret	nz		;07b1
 ; ----------------------------------------------------------------------
-; 07B2H – ?OV ERROR entry point – “OVERR”
+; 07B2H – ?OV ERROR ENTRY POINT – “OVERR”
 ; ----------------------------------------------------------------------
 OVERR:	ld	e,ERROV		;07b2
 	jp	ERROR		;07b4
@@ -2618,7 +2618,7 @@ CHKSTR:	rst	20h		;0af4
 	ret	z		;0af5
 ;
 ; ----------------------------------------------------------------------
-; 0AF6 – ?TM Error Routine – “TMERR”
+; 0AF6H – ?TM ERROR ENTRY POINT – “TMERR”
 ; ----------------------------------------------------------------------
 TMERR:	ld	e,ERRTM		;0af6
 	jp	ERROR		;0af8
@@ -2773,13 +2773,13 @@ UMULT:	push	hl		;0baa
 	jr	z,MULRET	;0bb0
 	ld	a,$10		;0bb2
 UMULT1:	add	hl,hl		;0bb4
-	jp	c,BSER		;0bb5
+	jp	c,BSERR		;0bb5
 	ex	de,hl		;0bb8
 	add	hl,hl		;0bb9
 	ex	de,hl		;0bba
 	jr	nc,UMULT2	;0bbb
 	add	hl,bc		;0bbd
-	jp	c,BSER		;0bbe
+	jp	c,BSERR		;0bbe
 UMULT2:	dec	a		;0bc1
 	jr	nz,UMULT1	;0bc2
 MULRET:	ex	de,hl		;0bc4
@@ -5296,7 +5296,7 @@ REASON:	push	hl		;196c
 	ret	c		;1979
 ;
 ; ----------------------------------------------------------------------
-; 197A-197B – ?OM ERROR ENTRY POINT – “OMERR”
+; 197AH – ?OM ERROR ENTRY POINT – “OMERR”
 ; ----------------------------------------------------------------------
 OMERR:	ld	e,ERROM		;197a
 	jr	ERROR		;197c
@@ -5316,14 +5316,26 @@ PRGEND:	ld	hl,(CURLIN)	;197e
 ENDCNJ:	jp	ENDCON		;198e
 DATSNE:	ld	hl,(DATLIN)	;1991
 	ld	(CURLIN),hl	;1994
+; ----------------------------------------------------------------------
+; 1997H – ?SN ERROR ENTRY POINT – “SNERR”
+; ----------------------------------------------------------------------
 SNERR:	ld	e,ERRSN		;1997 - ?SN ERROR
 ;
+; ----------------------------------------------------------------------
+; 1999A – ?D0 ERROR ENTRY POINT – “DV0ERR”
+; ----------------------------------------------------------------------
 	.DB	LDBCNN		;1999 Z80 Trick LD BC,nnnn - skips the next 2 byte instruction
 DV0ERR:	ld	e,ERRD0		;199A - ?/0 ERROR
 ;
+; ----------------------------------------------------------------------
+; 199DH – ?NF ERROR ENTRY POINT – “NFERR”
+; ----------------------------------------------------------------------
 	.DB	LDBCNN		;199c  Z80 Trick LD BC,nnnn - skips the next 2 byte instruction
 NFERR:	ld	e,ERRNF		;199d - ?NF ERROR
 ;
+; ----------------------------------------------------------------------
+; 19A0H – ?OV ERROR ENTRY POINT – “REERR”
+; ----------------------------------------------------------------------
 	.DB	LDBCNN		;199f  Z80 Trick LD BC,nnnn - skips the next 2 byte instruction
 REERR:	ld	e,ERRRW		;19A0 - ?RW ERROR
 ;
@@ -6244,7 +6256,7 @@ INTID2:	call	GETIN2		;1e46
 	ret	p		;1e49
 ;
 ; ----------------------------------------------------------------------
-; 1E4A - ?FC ERROR entry point - "FCERR"
+; 1E4AH - ?FC ERROR ENTRY POINT - "FCERR"
 ; ----------------------------------------------------------------------
 FCERR:	ld	e,ERRFC		;1e4a
 	jp	ERROR		;1e4c
@@ -6370,7 +6382,7 @@ GOTO2:	call	REM		;1ec5
 	dec	hl		;1ed7
 	ret	c		;1ed8
 ; ----------------------------------------------------------------------
-; 1ED9-1EDD - LEVEL II BASIC ?UL ERROR ROUTINE - "USERR"
+; 1ED9H - ?UL ERROR ENTRY POINT - "USERR"
 ; ----------------------------------------------------------------------
 USERR:	ld	e,ERRUL		;1ed9
 	jp	ERROR		;1edb
@@ -6385,9 +6397,6 @@ RETURN:	ret	nz		;1ede
 	ld	sp,hl		;1ee4
 	ld	(SAVSTK),hl	;1ee5
 	cp	$91		;1ee8
-; ----------------------------------------------------------------------
-; 1EEA - RG ERROR entry point.
-; ----------------------------------------------------------------------
 	ld	e,ERRRG		;1eea
 	jp	nz,ERROR	;1eec
 	pop	hl		;1eef
@@ -6589,7 +6598,10 @@ ERRORS:	call	GETBYT		;1ff4
 	ld	e,a		;1ffe
 	cp	$2D		;1fff
 	jr	c,GOERR		;2001
-	ld	e,ERRUE		;2003
+; ----------------------------------------------------------------------
+; 2003H - ?UE ERROR ENTRY POINT - "UEERR"
+; ----------------------------------------------------------------------
+UEERR:	ld	e,ERRUE		;2003
 GOERR:	jp	ERROR		;2005
 ;
 ; ----------------------------------------------------------------------
@@ -7958,9 +7970,9 @@ NMARY1:	inc	hl		;2728
 	sub	(hl)		;2739
 	jp	z,GETDEF	;273a
 ; ----------------------------------------------------------------------
-; 273D – ?BS ERROR entry point – “BSER”
+; 273DH – ?BS ERROR ENTRY POINT – “BSERR”
 ; ----------------------------------------------------------------------
-BSER:	ld	e,ERRBS		;273d
+BSERR:	ld	e,ERRBS		;273d
 	jp	ERROR		;273f
 ; ----------------------------------------------------------------------
 ; 2742 – Part of the ARRAY routines. – “NOTFDD”
@@ -8003,7 +8015,7 @@ NOTDIM:	ld	(hl),c		;2763
 	ld	c,e		;2771
 	ex	de,hl		;2772
 	add	hl,de		;2773
-	jr	c,BSER		;2774
+	jr	c,BSERR		;2774
 	call	REASON		;2776
 	ld	(STREND),hl	;2779
 ZERITA:	dec	hl		;277c
@@ -8045,7 +8057,7 @@ INLPNM:	pop	hl		;279a
 	ex	(sp),hl		;279f
 	push	af		;27a0
 	rst	18h		;27a1
-	jp	nc,BSER		;27a2
+	jp	nc,BSERR	;27a2
 	call	UMULT		;27a5
 	add	hl,de		;27a8
 	pop	af		;27a9
@@ -8157,9 +8169,9 @@ ERRDIR:	push	hl		;2828
 	pop	hl		;282f
 	ret	nz		;2830
 ; ----------------------------------------------------------------------
-; 2831 – ID ERROR entry point. - ?ID ERRER
+; 2831H – ID? ERROR ENTRY POINT - "IDERR"
 ; ----------------------------------------------------------------------
-	ld	e,ERRID		;2831
+IDERR:	ld	e,ERRID		;2831
 	jp	ERROR		;2833
 ; ----------------------------------------------------------------------
 ; 2836-2856 – STRING ROUTINE – STR$ logic– “FNSTR”
@@ -8241,9 +8253,9 @@ PUTNEW:	ld	de,DSCTMP	;2884
 	ld	a,(hl)		;289f
 	ret	nz		;28a0
 ; ----------------------------------------------------------------------
-; 28A1 – ST ERROR entry point.
+; 28A1H – ST? ERROR ENTRY POINT - "STERR"
 ; ----------------------------------------------------------------------
-	ld	e,ERRST		;28a1
+STERR:	ld	e,ERRST		;28a1
 	jp	ERROR		;28a3
 ;
 ; ----------------------------------------------------------------------
