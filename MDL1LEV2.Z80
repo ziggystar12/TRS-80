@@ -168,7 +168,7 @@ SEMICO	.EQU	$3B	; semicolin. Note ';' in code; was breaking some assemblers
 ; ======================================================================
 ;   START OF PROGRAM CODE
 ; ----------------------------------------------------------------------
-;	.ORG	$0000	; IMPLICT IN STANALONE ROM BUILD (commented out)
+	.ORG	$0000	; Start of ROM Code Base
 RAM:	.EQU	$4000	; Start of RAM Communications area
 ; ======================================================================
 ;
@@ -1000,20 +1000,20 @@ ISCHAR:	call	EXINC		;0358
 INLIN:	xor	a		;0361
 	ld	(CHARC),a	;0362
 	ld	(TTYPOS),a	;0365
-	call	INLINE		;0368
+	call	INLINE		;0368 - Go call the DOS link at 41AFH
 	push	bc		;036b
-	ld	hl,(BUFPNT)	;036c
-	ld	b,$F0		;036f
-	call	KEYIN		;0371
+	ld	hl,(BUFPNT)	;036c - address of the input buffer
+	ld	b,240		;036f - length of the input buffer
+	call	KEYIN		;0371 - keyboard input routine, until a CR, a BREAK
 	push	af		;0374
 	ld	c,b		;0375
 	ld	b,$00		;0376
 	add	hl,bc		;0378
-	ld	(hl),$00	;0379
+	ld	(hl),$00	;0379 - Save an end of the input terminator
 	ld	hl,(BUFPNT)	;037b
 	pop	af		;037e
 	pop	bc		;037f
-	dec	hl		;0380
+	dec	hl		;0380 - Decrement the input buffer pointer
 	ret	c		;0381
 	xor	a		;0382
 	ret			;0383
@@ -1512,6 +1512,12 @@ PRTSA:	ld	a,(prtstat)	;05d1
 ;   full. All edit control codes are recognized, e.g. TAB,
 ;   BACKSPACE, etc. The calling sequence is: On exit the
 ;   registers contain
+;
+;   On exit the registers contain: HL=Buffer address, B=num chars transmitted
+;   excluding last, C=Orginal buffer size, A=Last character received
+;   if a carriage return or BREAK is typed.
+;   Carry Set if break key was terminator, reset otherwise.
+;   If the buffer is full, the A Register will contain the buffer size.
 ; ----------------------------------------------------------------------
 KEYIN:	push	hl		;05d9
 	ld	a,CURON		;05da - turn on the cursor character
