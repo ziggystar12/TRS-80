@@ -74,6 +74,7 @@ ROM_LOAD	.EQU $5000		; where the extra "rom is loaded
 ;
 ; ----------------------------------------------------------------------
 ;   BASIC TOKENS IDS
+;   (note: this is not complete, just constants used in code)
 ; ----------------------------------------------------------------------
 TKFOR:	.EQU	$81	; FOR
 TKDATA:	.EQU	$88	; DATA
@@ -102,6 +103,12 @@ TKPLUS:	.EQU	$CD	; +
 TKMNUS:	.EQU	$CE	; -
 TKGT:	.EQU	$D4	; >
 TKEQL:	.EQU	$D5	; =
+TKLT:	.EQU	$D6	; <
+TKSGN:	.EQU	$D7	; SGN
+ONEFUN: .EQU	$D7	; SGN - Called ONEFUN in TRS-80.COM disassembly.
+TKSQR:	.EQU	$DD	; SQR
+TKATN:	.EQU	$E4	; ATN
+TKMID:	.EQU	$FA	; MID
 TKSNQT:	.EQU	$FB	; '
 ;
 ; ----------------------------------------------------------------------
@@ -5002,10 +5009,10 @@ ATNCON:	.DB	$09		; number constants which follows
 ;
 ; ----------------------------------------------------------------------
 ; 1608-164F - Function Dispatch Table
-;           - for functions stating at token $D7 to $FA
+;           - for functions stating at token $D7 (SGN) to $FA (MID$)
 ; ----------------------------------------------------------------------
 FUNDSP:
-	.DW	FNSGN		; SGN()
+	.DW	FNSGN		; SGN() - ($D7)
 	.DW	FNINT		; INT()
 	.DW	FNABS		; ABS()
 	.DW	FNFRE		; FRE
@@ -5043,37 +5050,38 @@ FUNDSP:
 	.DW	FNCHR		; CHR$
 	.DW	FNLEFT		; LEFT$
 	.DW	FNRGT		; RIGHT$
-	.DW	FNMID		; MID$
+	.DW	FNMID		; MID$ - ($FA)
 ;
 ; ----------------------------------------------------------------------
 ; 1650-1821 - Reserved key word list (in token order)
 ;       * first character ored with 80h to denote start of new token
 ;       * token ID's start from $80 and increment
+;	* token ID is in the comments for reference purposes
 ;	* table is broken into statments, followed by functions
 ; ----------------------------------------------------------------------
 RESLST:
-	.DB	$C5,"ND"	; END - $80
-	.DB	$C6,"OR"	; FOR - $81
-	.DB	$D2,"ESET"	; RESET
-	.DB	$D3,"ET"	; SET
+	.DB	$C5,"ND"	; END   - $80
+	.DB	$C6,"OR"	; FOR   - $81
+	.DB	$D2,"ESET"	; RESET - $82
+	.DB	$D3,"ET"	; SET   - $83
 	.DB	$C3,"LS"	; CLS
 	.DB	$C3,"MD"	; CMD (disk)
 	.DB	$D2,"ANDOM"	; RANDOM
 	.DB	$CE,"EXT"	; NEXT
-	.DB	$C4,"ATA"	; DATA
+	.DB	$C4,"ATA"	; DATA  - $88
 	.DB	$C9,"NPUT"	; INPUT
 	.DB	$C4,"IM"	; DIM
 	.DB	$D2,"EAD"	; READ
 	.DB	$CC,"ET"	; LET
-	.DB	$C7,"OTO"	; GOTO
+	.DB	$C7,"OTO"	; GOTO  - $8D
 	.DB	$D2,"UN"	; RUN
 	.DB	$C9,"F"		; IF
 	.DB	$D2,"ESTORE"	; RESTORE
 	.DB	$C7,"OSUB"	; GOSUB
 	.DB	$D2,"ETURN"	; RETURN
-	.DB	$D2,"EM"	; REM
+	.DB	$D2,"EM"	; REM   - $93
 	.DB	$D3,"TOP"	; STOP
-	.DB	$C5,"LSE"	; ELSE
+	.DB	$C5,"LSE"	; ELSE  - $95
 	.DB	$D4,"RON"	; TRON
 	.DB	$D4,"ROFF"	; TROFF
 	.DB	$C4,"EFSTR"	; DEFSTR
@@ -5102,7 +5110,7 @@ RESLST:
 	.DB	$CC,"PRINT"	; LPRINT
 	.DB	$C4,"EF"	; DEF (disk)
 	.DB	$D0,"OKE"	; POKE
-	.DB	$D0,"RINT"	; PRINT
+	.DB	$D0,"RINT"	; PRINT - $B2
 	.DB	$C3,"ONT"	; CONT
 	.DB	$CC,"IST"	; LIST
 	.DB	$CC,"LIST"	; LLIST
@@ -5111,14 +5119,14 @@ RESLST:
 	.DB	$C3,"LEAR"	; CLEAR
 	.DB	$C3,"LOAD"	; CLOAD
 	.DB	$C3,"SAVE"	; CSAVE
-	.DB	$CE,"EW"	; NEW
+	.DB	$CE,"EW"	; NEW   - $BB
 	;
 	; The following are Functions
 	;
-	.DB	$D4,"AB("	; TAB()
-	.DB	$D4,"O"		; TO
-	.DB	$C6,"N"		; FN (disk)
-	.DB	$D5,"SING"	; USING
+	.DB	$D4,"AB("	; TAB()     - $BC
+	.DB	$D4,"O"		; TO        - $BD
+	.DB	$C6,"N"		; FN (disk) - $BE
+	.DB	$D5,"SING"	; USING     - $BF
 	.DB	$D6,"ARPTR"	; VARPTR
 	.DB	$D5,"SR"	; USR
 	.DB	$C5,"RL"	; ERL
@@ -5130,24 +5138,24 @@ RESLST:
 	.DB	$CD,"EM"	; MEM
 	.DB	$C9,"NKEY$"	; INKEY$
 	.DB	$D4,"HEN"	; THEN
-	.DB	$CE,"OT"	; NOT
-	.DB	$D3,"TEP"	; STEP
+	.DB	$CE,"OT"	; NOT  - $CB
+	.DB	$D3,"TEP"	; STEP - $CC
 ;
-	.DB	$AB		; +
-	.DB	$AD		; -
+	.DB	$AB		; + ($CD)
+	.DB	$AD		; - ($CE)
 	.DB	$AA		; *
 	.DB	$AF		; /
 	.DB	$DB		; [ - (up arrow)
 ;
-	.DB	$C1,"ND"	; AND
-	.DB	$CF,"R"		; OR
+	.DB	$C1,"ND"	; AND - $D2
+	.DB	$CF,"R"		; OR  - $D3
 ;
-	.DB	$BE		; >
+	.DB	$BE		; > ($D4)
 	.DB	$BD		; =
-	.DB	$BC		; <
+	.DB	$BC		; < ($D6)
 ;
-	.DB	$D3,"GN"	; SGN
-	.DB	$C9,"NT"	; INT
+	.DB	$D3,"GN"	; SGN - $D7
+	.DB	$C9,"NT"	; INT - $D8
 	.DB	$C1,"BS"	; ABS
 	.DB	$C6,"RE"	; FRE
 	.DB	$C9,"NP"	; INP
@@ -5183,7 +5191,7 @@ RESLST:
 	.DB	$D2,"IGHT$"	; RIGHT$ - $F9
 	.DB	$CD,"ID$"	; MID$   - $FA
 ;
-	.DB	$A7		; ' - $FB
+	.DB	$A7		; ' ($FB)
 ;
 	.DB	80h		; TERMINATOR.
 ;
@@ -7690,8 +7698,8 @@ NTVARP:	cp	TKUSR		;24ff - USR Function
 	jp	z,STRNGS	;251f
 	cp	TKFN		;2522
 	jp	z,DVFN		;2524 - FN Handler
-	sub	$D7		;2527 - ID the first functional token
-	jp	nc,ISFUN	;2529
+	sub	ONEFUN		;2527 - Is a function starting at SGN
+	jp	nc,ISFUN	;2529 - Jump if is a SGN to MID$ token
 ; ----------------------------------------------------------------------
 ; 252CH – Other Function Routine – If we pass through to here, the only
 ; other possibility is that it is a function in parenthesis – “PARCHK”
@@ -7724,14 +7732,15 @@ RETVAR:	push	hl		;2543
 ; 254E – This routine processes an expression for SNG( to MID$( – “ISFUN”
 ; ----------------------------------------------------------------------
 ISFUN:	ld	b,$00		;254e
-	rlca			;2550
+	rlca			;2550 - Set A to be 2 * (token – D7H)
 	ld	c,a		;2551
 	push	bc		;2552
 	GETCHR			;2553 - rst 10h
 	ld	a,c		;2554
-	cp	$41		;2555
-	jr	c,OKNORM	;2557
-	call	FRMPRN		;2559
+	;2555 - Test the adjusted token to see if it is past 2 * LASNUM – 2 * ONEFUN + 1
+	cp	$41
+	jr	c,OKNORM	;2557 - Jump if the token is SGN( to CHR$(.
+	call	FRMPRN		;2559 - If not, it is a LEFT$ – MID$
 ; ----------------------------------------------------------------------
 	SYNTAX	(',')		;255c - rst 08h
 	call	CHKSTR		;255e
@@ -7748,9 +7757,11 @@ OKNORM:	call	PARCHK		;256f
 	ex	(sp),hl		;2572
 ; ----------------------------------------------------------------------
 	ld	a,l		;2573
-	cp	$0C		;2574
-	jr	c,NOTFRF	;2576
-	cp	$1B		;2578
+	;2574 - Check to see if the operator token in Register A is one less than SQR - $0C
+	cp	(TKSQR-ONEFUN)*2
+	jr	c,NOTFRF	;2576 - Jump to avoid forcing the argument if is SGN to SQR
+	;2578 - Check to see if the operator token in Register A is bigger than ATN() - $1B
+	cp	(TKATN-ONEFUN)*2+1
 	push	hl		;257a
 	call	c,FRCSNG	;257b
 	pop	hl		;257e
