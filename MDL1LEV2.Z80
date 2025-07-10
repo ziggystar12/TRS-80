@@ -2798,7 +2798,8 @@ VALSNG:	ld	a,VTSNG		;0aef - single precision number type flag (of 4)
 ;
 ; ----------------------------------------------------------------------
 ; 0AF4H-0AFAH – LEVEL II BASIC STRING CONVERSION ROUTINE – “CHKSTR”
-;   This routine will force the ACCUmlator to be a STRING. Only Register A is modified.
+;   This routine calls 20H (RST 20H) and returns if NTF=3 (string) else if NTF is not 3
+;   then it generates a TM ERROR. BC, DE, and HL are saved
 ; ----------------------------------------------------------------------
 CHKSTR:	TSTDAT			;0af4
 	ret	z		;0af5
@@ -5048,6 +5049,7 @@ FUNDSP:
 	.DW	DVMKI		; MKI
 	.DW	DVMKS		; MKS
 	.DW	DVMKD		; MKD
+; END of DISK IO Functions
 ;
 	.DW	FRCINT		; CINT()
 	.DW	FRCSNG		; CSNG()
@@ -7369,6 +7371,15 @@ LOOPDN:	ld	sp,hl		;2324
 ;   note that on exit Register A does not necessarily reflect the term char
 ; ----------------------------------------------------------------------
 FRMPRN:	SYNTAX	('(')		;2335 - rst 08h
+;----------------------------------------------------------------------
+; FRMEVL evaluates a BASIC expression pointed to by the HL register pair and
+; stores the result in the ACC. The expression must be terminated with zero byte,
+; comma, right bracket or colon. After execution, HL will point to the delimiter and,
+; in the case of string expressions, the ACC will contain the address of the first of
+; three bytes that contain string length and string address. Note that the stack is used
+; frequently and the machine should be formatted for RUN mode in order to use this
+; routine. (See sample program in Appendix 1 for an application of this routine).
+;----------------------------------------------------------------------
 FRMEVL:	dec	hl		;2337
 FRMCHK:	ld	d,$00		;2338
 LPOPER:	push	de		;233a
@@ -8683,12 +8694,16 @@ MOVLP:	dec	l		;29cf
 ; ----------------------------------------------------------------------
 ; 29D7-29F4 – STRING ROUTINE – “FRESTR”
 ;
-;   FRETMP is passed a pointer to a string descriptor in Register Pair DE
-;   and is returned in Register Pair HL. All the other registers are modified.
+;   This routine makes the HL register pair point to the first
+;   of the three bytes containing string length followed by the string address
 ; ----------------------------------------------------------------------
 FRESTR:	call	CHKSTR		;29d7
 FREFAC:	ld	hl,(FACLO)	;29da
 FRETM2:	ex	de,hl		;29dd
+;
+;   FRETMP is passed a pointer to a string descriptor in Register Pair DE
+;   and is returned in Register Pair HL. All the other registers are modified.
+;
 FRETMP:	call	FRETMS		;29de
 	ex	de,hl		;29e1
 	ret	nz		;29e2
@@ -10078,27 +10093,27 @@ DVLINE:	.EQU	ERCALL+81	; LINE  $41A3
 ; DOS Exits, Pass control between Level II BASIC and Disk BASIC (41A6-41E2)
 ; initially these are all populated with RET statements by code at (009F)
 DEXT:	.EQU	RAM+$1A6	; Base Address for DOS Exits
-EXDSKR:	.EQU	DEXT+0		; (19EC) Disk Basic ERROR handling
-USROUT:	.EQU	DEXT+3		; (27FE) USR N - to expand function to provide up to ten USR calls
-PRGFIN:	.EQU	DEXT+6		; (1A1C) BASIC start up. Just before BASIC's 'READY' message
-INLINE:	.EQU	DEXT+9		; (0368) At start of keyboard input
-DIRDO:	.EQU	DEXT+12		; (1AA1) Input scanner after tokenizing current statement
-EXFIND:	.EQU	DEXT+15		; (1AEC) Input scanner after updating program statement table
-EXFIN2:	.EQU	DEXT+18		; (1AF2) Input scanner after reinitializing BASIC.
-CLSALL:	.EQU	DEXT+21		; (1D**) Initializing BASIC for new routine. During END processing
-FINDRT:	.EQU	DEXT+24		; (2174) During initializing of system output device
-EXOUTC:	.EQU	DEXT+27		; (032C) During writing to system output device.
-EXINC:	.EQU	DEXT+30		; (0358) When scanning keyboard.
-LRUN:	.EQU	DEXT+33		; (1EA6) At start of RUN NNN processing.
-FILGET:	.EQU	DEXT+36		; (206F) At beginning of PRINT processing.
-EXDSKL:	.EQU	DEXT+39		; (20C6) During PRINT # or PRINT item processing.
-EXDSCR:	.EQU	DEXT+42		; (2103) When skipping to next line on video during a output op
-EXPDOS:	.EQU	DEXT+45		; (21**) At start of PRINT on cassette and during PRINT TAB.
-EXUNKN:	.EQU	DEXT+48		; (219E) At beginning of INPUT processing
-DLHSMD:	.EQU	DEXT+51		; (2AEC)
-FILIND:	.EQU	DEXT+54		; (222D) During READ processing when a variable has been read.
-EXCHDS:	.EQU	DEXT+57		; (2***) From List, At end of READ processing
-SYSOUT:	.EQU	DEXT+60		; (02B2) During SYSTEM command operation
+EXDSKR:	.EQU	DEXT+0		; (19EC) Disk Basic ERROR handling (41A6)
+USROUT:	.EQU	DEXT+3		; (27FE) USR N - to expand function to provide up to ten USR calls (41A9)
+PRGFIN:	.EQU	DEXT+6		; (1A1C) BASIC start up. Just before BASIC's 'READY' message (41AC)
+INLINE:	.EQU	DEXT+9		; (0368) At start of keyboard input (41AF)
+DIRDO:	.EQU	DEXT+12		; (1AA1) Input scanner after tokenizing current statement (41B2)
+EXFIND:	.EQU	DEXT+15		; (1AEC) Input scanner after updating program statement table (41B5)
+EXFIN2:	.EQU	DEXT+18		; (1AF2) Input scanner after reinitializing BASIC. (41B8)
+CLSALL:	.EQU	DEXT+21		; (1D**) Initializing BASIC for new routine. During END processing (41BB)
+FINDRT:	.EQU	DEXT+24		; (2174) During initializing of system output device (41BE)
+EXOUTC:	.EQU	DEXT+27		; (032C) During writing to system output device. (41C1)
+EXINC:	.EQU	DEXT+30		; (0358) When scanning keyboard. (41C4)
+LRUN:	.EQU	DEXT+33		; (1EA6) At start of RUN NNN processing. (41C7)
+FILGET:	.EQU	DEXT+36		; (206F) At beginning of PRINT processing. (41CA)
+EXDSKL:	.EQU	DEXT+39		; (20C6) During PRINT # or PRINT item processing. (41CD)
+EXDSCR:	.EQU	DEXT+42		; (2103) When skipping to next line on video during a output op (41D0)
+EXPDOS:	.EQU	DEXT+45		; (21**) At start of PRINT on cassette and during PRINT TAB. (41D3)
+EXUNKN:	.EQU	DEXT+48		; (219E) At beginning of INPUT processing (41D6)
+DLHSMD:	.EQU	DEXT+51		; (2AEC) (41D9)
+FILIND:	.EQU	DEXT+54		; (222D) During READ processing when a variable has been read. (41DC)
+EXCHDS:	.EQU	DEXT+57		; (2***) From List, At end of READ processing (41DF)
+SYSOUT:	.EQU	DEXT+60		; (02B2) During SYSTEM command operation (41E2)
 ;
 BUFINI:	.EQU	RAM+$1E5	; String Buffer initialised colon null comma
 SMPSTK:	.EQU	RAM+$1F8	; Initial Stack address.
