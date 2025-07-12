@@ -6226,21 +6226,21 @@ GONE1:	GETCHR			;1d5a - rst 10h
 	ld	de,NEWSTT	;1d5b
 	push	de		;1d5e
 GONE3:	ret	z		;1d5f
-GONE2:	sub	$80		;1d60
-	jp	c,LET		;1d62
-	cp	TKTAB-$80	;1d65 - if the token is below the TAB( token
-	jp	nc,ISMID	;1d67
-	rlca			;1d6a
+GONE2:	sub	TKOFF		;1d60 - Check for a token >= 80H
+	jp	c,LET		;1d62 - this must be a LET so jump to 1F21H
+	cp	TKTAB-TKOFF	;1d65 - if the token is below the TAB( token
+	jp	nc,ISMID	;1d67 - If the token >= TAB token
+	rlca			;1d6a - Multiply the token value in Register A by two
 	ld	c,a		;1d6b
-	ld	b,$00		;1d6c
-	ex	de,hl		;1d6e save the BASIC program pointer DE into HL
-	ld	hl,STMDSP	;1d6f list of BASIC execution addresses (Statement Dispatch Table)
-	add	hl,bc		;1d72
-	ld	c,(hl)		;1d73
+	ld	b,$00		;1d6c - address offset into BC
+	ex	de,hl		;1d6e - save the BASIC program pointer DE into HL
+	ld	hl,STMDSP	;1d6f - list of BASIC execution addresses (Statement Dispatch Table)
+	add	hl,bc		;1d72 - add the offset
+	ld	c,(hl)		;1d73 - get low order byte
 	inc	hl		;1d74
-	ld	b,(hl)		;1d75
-	push	bc		;1d76 Save execution address in BC to the STACK
-	ex	de,hl		;1d77 restore the BASIC program pointer into DE
+	ld	b,(hl)		;1d75 - het high order byte
+	push	bc		;1d76 - Save execution address in BC to the STACK
+	ex	de,hl		;1d77 - restore the BASIC program pointer into DE
 ;
 ; ======================================================================
 ; 1D78-1D90 – RST 0010H CODE – “CHRGTR”
