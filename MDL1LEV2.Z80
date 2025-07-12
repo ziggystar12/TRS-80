@@ -6506,9 +6506,9 @@ MORLIN:	GETCHR			;1e5e - rst 10h
 	add	hl,de		;1e6d
 	add	hl,hl		;1e6e
 	pop	af		;1e6f
-	sub	$30		;1e70
+	sub	'0'		;1e70 - Convert the ASCII digit to binary
 	ld	e,a		;1e72
-	ld	d,$00		;1e73
+	ld	d,$00		;1e73 - DE will be binary 0000 through 0009
 	add	hl,de		;1e75
 	ex	de,hl		;1e76
 	pop	hl		;1e77
