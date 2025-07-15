@@ -248,13 +248,18 @@ rst00:	di			;0000
 rst08:	jp	mRST1		;0008
 ;
 ; ----------------------------------------------------------------------
-; 000BH-000CH – DISK ROUTINE – "_WHERE"
+; 000BH-000CH – DISK ROUTINE – "_WHERE" ( RESOLVE RELOCATION ADDRESS )
+;   Same as a RET instruction except leaves return address in HL
+;    A relocatable program can CALL 000BH and upon return the HL register
+;    will contain hte current address of PC, thus can find itself in memory
 ; ----------------------------------------------------------------------
 _WHERE:	pop	hl		;000b
 	jp	(hl)		;000c
 ;
 ; ----------------------------------------------------------------------
 ; 000DH-000FH – DISK BOOTSTRAP – "_BOOT"
+;   Does a "warm" system reboot, in that it reloads and executes the Disk
+;    Operating System but does not re-initialize all system pointers, etc.
 ; ----------------------------------------------------------------------
 _BOOT:	jp	BOOT		;000d - Jump to Disk Bootstrap loader (069Fh)
 ;
@@ -435,7 +440,8 @@ PAUSE:	dec	bc		;0060
 	ret			;0065
 ;
 ; ----------------------------------------------------------------------
-; 0066 is the location to which program control jumps when the RESET button
+; 0066 - NMI RESET
+; the location to which program control jumps when the RESET button
 ; is pressed (Non Maskable Interrupt address)
 ; The RESET button generates an NMI, not an actual reset.
 ; ----------------------------------------------------------------------
@@ -450,13 +456,17 @@ NMI:	ld	sp,$0600	;0066 - wrong Stack Pointer. Replaced
 	inc	a		;006C
 	cp	$02		;006D - disk present?
 	jp	nc,_START	;006F -   yes: re_START as if power-up
+;
+; ----------------------------------------------------------------------
+; Alternative entry point to BASIC. See 06CCH for more details
+; ----------------------------------------------------------------------
 	jp	RESETR		;0072 -   no: go to BASIC prompt
 ;
 ; ----------------------------------------------------------------------
 ; 0075H-0104H – INITIALIZATION ROUTINE – "INIT2"
-; ----------------------------------------------------------------------
 ;  This is part of the Level II initialization procedure. It moves
 ;  division support routine from 18F7H to 191EH up to 4080H to 40A7H.
+; ----------------------------------------------------------------------
 INIT2:	ld	de,FDIVC	;0075
 	ld	hl,CONSTR	;0078
 	ld	bc,$0027	;007b
@@ -1856,7 +1866,7 @@ BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
 	jr	nz,BOOTLP	;06c7 - Loop until whole 256 byte sector has been read
 	jp	MEMEND		;06c9 - Hand execution to the boot sector code
 ; ----------------------------------------------------------------------
-; 06CCH-06CEH – Alternative re-entry point into BASIC – "RESETR"
+; 06CCH-06CEH – (Model 1) - re-entry point into BASIC – "RESETR"
 ;  This is an alternative re-entry point into BASIC. A JP 6CCH is often better
 ;  than a jump to 1A19H as the latter sometimes does strange things to any resident BASIC program
 ; ----------------------------------------------------------------------
@@ -1882,7 +1892,7 @@ INITR:
 	ret
 	nop
 ; Keyboard DCB
-	.DB	1
+	.DB	1		; 4015 - Device Type = 1 for KB (Read only)
 	.DW	KBDDRV		; KBD driver address
 	.DB	0
 	.DB	0
@@ -1890,18 +1900,18 @@ INITR:
 	.DB	"K"
 	.DB	"I"
 ; Display DCB
-	.DB	7
+	.DB	7		; 401D - Device Type = 7 for VID
 	.DW	DSPDRV		; DISPLAY driver address
-	.DW	vidmem		; Cursor Position
-	.DB	0
+	.DW	vidmem		; Cursor Position (3C00H to 3FFFH)
+	.DB	0		; Character "covered" on video by Cursor
 	.DB	"D"
 	.DB	"O"
 ; Printer DCB
-	.DB	6		; 4025
+	.DB	6		; 4025 - Device Type = 6 for Printer
 	.DW	PRTDRV		; driver address
 	.DB	43h		; lines per page
-	.DB	0
-	.DB	0
+	.DB	0		; Current Line Number
+	.DB	0		; Number of chars printed on current line
 	.DB	"P"
 	.DB	"R"
 ;
@@ -5240,8 +5250,8 @@ STMDSP:
 	.DW	REM		; REM
 	.DW	STOP		; STOP
 	.DW	REM		; ELSE (ELSE is not a standalone command)
-	.DW	TON		; TRON
-	.DW	TOFF		; TROFF
+	.DW	TRON		; TRON
+	.DW	TROFF		; TROFF
 	.DW	DEFSTR		; DEFSTR
 	.DW	DEFINT		; DEFINT
 	.DW	DEFREA		; DEFSNG
@@ -5545,6 +5555,12 @@ ERROR:	ld	hl,(CURLIN)	;19a2
 	ld	(ERRLIN),hl	;19a5
 	ld	(DOT),hl	;19a8
 ERRESM:	ld	bc,ERRMOR	;19ab - ret addr - continuation address after reinit
+;
+; ----------------------------------------------------------------------
+; 19AE - ALTERNATE ENTRY TO BASIC "READY"
+; To use this routine, load the BC with 1A18H, then JP the 19AE
+; OR Jump to 06CC instead.
+; ----------------------------------------------------------------------
 ERESET:	ld	hl,(SAVSTK)	;19ae
 	jp	STKERR		;19b1
 ;
@@ -5611,6 +5627,14 @@ ERRFIN:	call	STROUT		;1a06
 	.DB	LDANN		; Z80 Trick - LD A,nn - skip next 1 byte instruction
 ;
 STPRDY:	pop	bc		;1a18
+;
+; ======================================================================
+; 1A19 - OFFICIAL" RETURN TO BASIC "READY"
+;  The disadvantage of using this entry is that it will often return
+;   an "Out Memory Error" message response to the next command typed
+;   in, even though the condition does not exist.
+;  Often 06CCH or 0072H are used as alternatives, but these dont work on M3
+; ======================================================================
 READY:	call	FINLPT		;1a19 - Re-entry into BASIC command mode entry point. (see 6CCH also)
 	call	PRGFIN		;1a1c - dos exit for BASIC startup
 	call	CTOFF		;1a1f - turn off the cassette recorder
@@ -5833,9 +5857,16 @@ FNLOOP:	ld	b,h		;1b2f
 ; 1B49-1B5C – LEVEL II BASIC NEW ROUTINE – “SCRATH”
 ; ----------------------------------------------------------------------
 SCRATH:	ret	nz		;1b49
+; ----------------------------------------------------------------------
+; 1B4A - Does a NEW as well as clearing the screen
+; ----------------------------------------------------------------------
 	call	CLS		;1b4a
+; ----------------------------------------------------------------------
+; 1B4D - NEW - This routine will wipe out the BASIC program currently
+;    in memory by resetting the pointers associated with it .
+; ----------------------------------------------------------------------
 SCRTCH:	ld	hl,(TXTTAB)	;1b4d
-	call	TOFF		;1b50
+	call	TROFF		;1b50
 	ld	(AUTFLG),a	;1b53
 	ld	(hl),a		;1b56
 	inc	hl		;1b57
@@ -6351,15 +6382,15 @@ CONT:	ld	hl,(OLDTXT)	;1de4
 	ret			;1df6
 ;
 ; ----------------------------------------------------------------------
-; 1DF7-1DF8 - TRON ENTRY POINT - "TON"
+; 1DF7-1DF8 - TRON ENTRY POINT - "TRON"
 ; ----------------------------------------------------------------------
-TON:	.DB	LDANN		;1df7 - Z80 Trick LD A,nn where nn is the next XOR instruction byte
+TRON:	.DB	LDANN		;1df7 - Z80 Trick LD A,nn where nn is the next XOR instruction byte
 ; which is nn zero, thus we store a non-ZERO, ON state
 ;
 ; ----------------------------------------------------------------------
-; 1DF8 - TROFF ENTRY POINT - "TOFF"
+; 1DF8 - TROFF ENTRY POINT - "TROFF"
 ; ----------------------------------------------------------------------
-TOFF:	xor	a		;1df8
+TROFF:	xor	a		;1df8
 	ld	(TRCFLG),a	;1df9
 	ret			;1dfc
 ;
@@ -9983,8 +10014,8 @@ mRST2:	.EQU	RAM+$03		; RST 10h (Get Next Character) Vector.
 mRST3:	.EQU	RAM+$06		; RST 18h (Cp HL, DE) Vector.
 mRST4:	.EQU	RAM+$09		; RST 20h (Get Current Type) Vector.
 mRST5:	.EQU	RAM+$0C		; RST 28h (Break Key Vector) Vector.
-mRST6:	.EQU	RAM+$0F		; RST 30h () Vector.
-mRST7:	.EQU	RAM+$12		; RST 38h (Interrup Service) Vector.
+mRST6:	.EQU	RAM+$0F		; RST 30h (DOS DEBUG entry point) Vector.
+mRST7:	.EQU	RAM+$12		; RST 38h (Interrupt Service) Vector.
 ;
 mKDCB:	.EQU	RAM+$15		; Keyboard Device Block
 mDDCB:	.EQU	RAM+$1D		; Video Device Block
@@ -9993,6 +10024,8 @@ mPDCB:	.EQU	RAM+$25		; Printer Device Block
 ;
 CIOSS:	.EQU	RAM+$33		; call device driver ala dos - CIO$
 KYBTSS:	.EQU	RAM+$36		; Keyboard driver work area (to 403C) - KYB$
+				; Stores contents of keyboard rows to see if key just
+				; pressed or if it was pressed previously.
 CAST:	.EQU	RAM+$3D		; Video Display Control Attributes (shadow IO Port $FF)
 ;
 CAST32	.EQU	$08		; Cassette 32 Character Mode Bit
