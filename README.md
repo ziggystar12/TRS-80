@@ -45,10 +45,10 @@ compatibility of the generated output.
 ### Build Options
 
 There are several `DEFINE`'s that can be set in the code (very start) to enable certain features.
-By default the build will create a Version 1.3
+By default, the build will create a Version 1.3
 
 The base ROM version can be defined.
-* `#DEFINE VER12` - uncomment this the degrade from V1.3 to V1.2 of the ROM.
+* `#DEFINE VER12` - uncomment this to degrade from V1.3 to V1.2 of the ROM.
 * `#DEFINE EACA80` - uncomment to enable Dick Smith System-80 (EACA) hardware support. 
   NOTE: While not mandatory you should also define `VER12` since the System-80 ROM was based on V1.2.
   V1.3 has not been formally tested, but assume should work, and opens ability to also specify `FREHDBT`  
@@ -57,8 +57,12 @@ There are several optional features.
 * `#DEFINE FREHDBT` - Enables the FreHD auto boot feature, i.e. the Auto boot ROM. This requires version 1.3 
   ROM as a base, please do NOT define `VER12` 
   Consider also enabling NMIHARD to ensure reset (on non-floppy machine) will force a reset.
+* `#DEFINE NO37EXH` - Disable the use of memory mapped hardware at `37Exh`, Floppy disk, Printer, etc.
+  This is useful in machines where these peripherals are not needed (e.g. in a FreHD only system)
+  and allows the use of the 2kb memory `3000h - 37FFh` without interference from the ROM code. 
+  This also implies `NMIHARD` since the reset functon check based on floppy disk availability
 * `#DEFINE NMIHARD` - Set NMI (reset) as always perform a hard reset. Normally on non-floppy systems NMI performs
-  a soft reset returing to the `READY>` prompt with the basic program intact. This is useful in system without 
+  a soft reset returning to the `READY>` prompt with the basic program intact. This is useful in system without 
   floppy disk to force a full reset (0066h)
 * `#DEFINE LOWCASE` - Disable Alpha character translation of letters A-Z,a-z to the values on range 00h to 1Fh. 
   This is useful when a lower case mod is installed, but an alternate video driver has not been installed, 

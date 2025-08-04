@@ -19,6 +19,7 @@
 ; #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
 ; #DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
 ; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (requires VER13)
+; #DEFINE NO37EXH ; Uncomment to disable use of memory mapped devices at 37Ex
 ;
 ; Build Features
 ; #DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
@@ -70,6 +71,12 @@ ROM_LOAD	.EQU $5000		; where the extra "rom is loaded
 #DEFINE VER13 	; VER13 must be used if FreHD is defined
 #ENDIF
 ;
+#ENDIF
+;
+#IFDEF NO37EXH
+    #IFNDEF NMIHARD
+	#DEFINE NMIHARD	; NMIHARD must be used if NO37EXH is defined
+    #ENDIF
 #ENDIF
 ;
 ; ----------------------------------------------------------------------
@@ -445,22 +452,22 @@ PAUSE:	dec	bc		;0060
 ; is pressed (Non Maskable Interrupt address)
 ; The RESET button generates an NMI, not an actual reset.
 ; ----------------------------------------------------------------------
-NMI:	ld	sp,$0600	;0066 - wrong Stack Pointer. Replaced
+NMI:	ld	sp,$0600	;0066 - wrong Stack Pointer. Replaced latter
 ;
 #IFDEF NMIHARD
-	ld	a,0		;0069 - Always START as if power-up
-	inc	a		;006B - by loading a with valid disk status
+	ld	a,$01		;0069 - Loading a valid disk status
+	nop			;006B - Which will ensure we start as if power-up
 #ELSE
 	ld	a,(diskstat)	;0069 - $FF if no expansion interface present
 #ENDIF
 	inc	a		;006C
-	cp	$02		;006D - disk present?
-	jp	nc,_START	;006F -   yes: re_START as if power-up
+	cp	$02		;006D - did we detect a disk controller
+	jp	nc,_START	;006F - If a disk is present START as if power-up
 ;
 ; ----------------------------------------------------------------------
 ; Alternative entry point to BASIC. See 06CCH for more details
 ; ----------------------------------------------------------------------
-	jp	RESETR		;0072 -   no: go to BASIC prompt
+	jp	RESETR		;0072 - NO - jump to Level II BASIC READY routine
 ;
 ; ----------------------------------------------------------------------
 ; 0075H-0104H – INITIALIZATION ROUTINE – "INIT2"
@@ -849,7 +856,13 @@ CTON:	ld	a,(hl)		;01fe
 ; ----------------------------------------------------------------------
 DEFDRV:
 #IFNDEF EACA80
-	ld	(casselect),a	;0212
+    #IFDEF NO37EXH
+    	nop			;0212 - No IO so ignore
+    	nop
+    	nop
+    #ELSE
+	ld	(casselect),a	;0212 - Set the requested cassette
+    #ENDIF
 #ELSE
 	out	(casport),a	;0212 - On Dick Smith System-80 (EACA) use IO port
 	nop			;0214
@@ -1602,34 +1615,49 @@ DSPERA:	ld	(hl),SPACE	;0580
 ; ----------------------------------------------------------------------
 PRTDRV:	ld	a,c		;058d
 	or	a		;058e
-	jr	z,PRTSA		;058f
-	cp	VERTAB		;0591 - is a skip to the top of the form
-	jr	z,PRTVT		;0593
-	cp	FORMF		;0595
-	jr	nz,PRTIT	;0597
+	jr	z,PRTSTA	;058f - If char=0 then get the printer status and return
+	cp	VERTAB		;0591 - is a skip to the top of the form Vertical Tab
+	jr	z,PRTVT		;0593 - Jump if it is a Vertical Tab
+	cp	FORMF		;0595 - is conditional skip to the top of the form Form Feed
+	jr	nz,PRTIT	;0597 - if not form feed - jump and print char
 	xor	a		;0599
 	or	(ix+3)		;059a
-	jr	z,PRTIT		;059d
+	jr	z,PRTIT		;059d - Jump if zero lines are to be skipped
 PRTVT:	ld	a,(ix+3)	;059f
 	sub	(ix+4)		;05a2
 	ld	b,a		;05a5
-PRTFF:	call	PRTSA		;05a6
-	jr	nz,PRTFF	;05a9
-	ld	a,LINEF		;05ab
+PRTFF:	call	PRTSTA		;05a6 - Call the GET PRINTER STATUS routine
+	jr	nz,PRTFF	;05a9 - Loop back until the printer is ready
+	ld	a,LINEF		;05ab - We print line feed character(s)
 #IFNDEF EACA80
-	ld	(prtstat),a	;05ad
+    #IFDEF NO37EXH
+    	nop			;05ad - Dont output since we dont have the hardware
+    	nop
+    	nop
+    #ELSE
+	ld	(prtstat),a	;05ad - Send the character to the printer port 37E8H
+    #ENDIF
 #ELSE
 	nop			;05ad
 	out	(prtport),a	;05ae - On Dick Smith System-80 (EACA) use IO port
 #ENDIF
-	djnz	PRTFF		;05b0
-	jr	PRTOP		;05b2
+	djnz	PRTFF		;05b0 - Loop back until all of the lines have been skipped
+	jr	PRTOP		;05b2 - all lines skipped, reset the line counter and ret
+; ----------------------------------------------------------------------
+; Printing of normal character starts here
+; ----------------------------------------------------------------------
 PRTIT:	push	af		;05b4
-PRTIT2:	call	PRTSA		;05b5
-	jr	nz,PRTIT2	;05b8
+PRTIT2:	call	PRTSTA		;05b5 - Call the GET PRINTER STATUS routine
+	jr	nz,PRTIT2	;05b8 - Loop back until the printer is ready
 	pop	af		;05ba
 #IFNDEF EACA80
-	ld	(prtstat),a	;05bb
+    #IFDEF NO37EXH
+    	nop			;05ad - Dont output since we dont have the hardware
+    	nop
+    	nop
+    #ELSE
+	ld	(prtstat),a	;05ad - Send the character to the printer port 37E8H
+    #ENDIF
 #ELSE
 	nop			;05bb
 	out	(prtport),a	;05bc - On Dick Smith System-80 (EACA) use IO port
@@ -1650,9 +1678,14 @@ PRTOP:	ld	(ix+4),0	;05cc
 ;   Returns the status of the line printer in the status register as
 ;   zero if the printer is ready, and non-zero if not ready.
 ; ----------------------------------------------------------------------
-PRTSA:
+PRTSTA:
 #IFNDEF EACA80
-	ld	a,(prtstat)	;05d1
+    #IFDEF NO37EXH
+    	ld	a,$30		;05d1 - No printer so return READY status
+    	nop
+    #ELSE
+	ld	a,(prtstat)	;05d1 - Get the status value from the printer (37E8H)
+    #ENDIF
 #ELSE
 	nop			;05d1
 	in	a,(prtport)	;05d2 - On Dick Smith System-80 (EACA) use IO port
@@ -1834,30 +1867,51 @@ CLRAM:	ld	(de),a		;0687
 ; This is the beginning of the routine which boots a diskette
 	ld	sp,TMPSTK	;0693 - $407D since Disk load will overite > $4200
 #IFDEF FREHDBT
-	call	HDBOOT		;0696 - ; call to the FreHD hd boot routines.
+	call	HDBOOT		;0696 - Call to the FreHD hd boot routines.
 #ENDIF
+#IFDEF NO37EXH
+	ld	a,$FF		;0069 - Load an invalid Disk status
+	nop			;006B - which will ensure we skip Disk Boot
+#ELSE
 	ld	a,(diskstat)	;0696 - status of the disk controller (37ECH)
+#ENDIF
 	inc	a		;0699
 	cp	$02		;069a - is disk controller present.
 	jp	c,INIT2		;069c - Jump to Level II Init if no disk controller
 ;   fallthrough
+;
+#IFDEF NO37EXH
+;
 ; ----------------------------------------------------------------------
 ; 069FH-06CBH – Bootstrap from Diskette – "BOOT"
+; Ignore Disk Boot - Since we dont have a Floppy Disk Controller
+; THIS REPLACES THE BOOT CODE BELOW!!!!
 ; ----------------------------------------------------------------------
+BOOT:	jp	_START		;069f - If a disk is present START as if power-up
+	.FILL	(06CCh - $,0)	; fill the space to next routine with ZERO's
+;
+#ELSE
+;
+; ----------------------------------------------------------------------
+; 069FH-06CBH – Bootstrap from Diskette – "BOOT"
+; Now we know (can assume) there is a disk controller and we should boot it.
+; ----------------------------------------------------------------------
+;
 BOOT:	ld	a,$01		;069f
 	ld	(dskselect),a	;06a1 - Select Drive :0 and turn the motor on
 	ld	hl,diskstat	;06a4 - address of the disk command/status Register 37ECH
 	ld	de,diskdata	;06a7 - address of the disk data Register (37EFH)
 	ld	(hl),$03	;06aa - command 03H (RESTORE and POSITION TO TRACK 0)
 #IFNDEF FREHDBT
-	; FreHD excludeds  these 3 bytes for call HDBOOT above (696h)
+	; FreHD excludes  these 3 bytes for call HDBOOT above (696h)
+	; noting it is expected tha BC = 0000 at this point of the execution
 	ld	bc,$0000	;06ac
 #ENDIF
 	call	PAUSE		;06af - delay (BC times 14.65) about 3 seconds
 BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
-	jr	nz,BOOTDL	;06b4
+	jr	nz,BOOTDL	;06b4 - Wait until it is ready
 	xor	a		;06b6
-	ld	(disksect),a	;06b7
+	ld	(disksect),a	;06b7 - set the disk sector register with 0
 	ld	bc,MEMEND	;06ba - address to read sector data (4200H)
 	ld	a,$8C		;06bd - command to read single IBM formatted sector
 	ld	(hl),a		;06bf
@@ -1867,7 +1921,10 @@ BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
 	ld	(bc),a		;06c5 - write byte to ram.
 	inc	c		;06c6 - next mem address
 	jr	nz,BOOTLP	;06c7 - Loop until whole 256 byte sector has been read
-	jp	MEMEND		;06c9 - Hand execution to the boot sector code
+	jp	MEMEND		;06c9 - Hand execution to the boot sector code $4200
+;
+#ENDIF
+;
 ; ----------------------------------------------------------------------
 ; 06CCH-06CEH – (Model 1) - re-entry point into BASIC – "RESETR"
 ;  This is an alternative re-entry point into BASIC. A JP 6CCH is often better
@@ -10063,7 +10120,7 @@ QED:	pop	bc		;2ff6
 ;
 ; On Disk Smith System 80 (EACA) there are additional Hardware IO ports
 prtport: .EQU	$FD		; Printer Port (replaces 37E8)
-casport: .EQU	$FE		; Cassette Select Latch Port
+casport: .EQU	$FE		; Cassette Select Port (replaces 37E4)
 ;
 vidcmt:	 .EQU	$FF		; VIDEO I/O Mode select and Cassette Port
 ;
@@ -10071,16 +10128,20 @@ vidcmt:	 .EQU	$FF		; VIDEO I/O Mode select and Cassette Port
 ;  Memory Mapped Hardware
 ; ----------------------------------------------------------------------
 ;
+#IFNDEF NO37EXH
+;
 dskselect:	.EQU $37E1	; Disk Drive Select Latch Address
 casselect:	.EQU $37E4	; Cassette Select Latch Address
-prtstat:	.EQU $37E8	; Printer Status Byte
-diskstat:	.EQU $37EC	; disk controller status
-disktrk:	.EQU $37ED	; disk track select
-disksect:	.EQU $37EE	; disk sector select
-diskdata:	.EQU $37EF	; disk data byte
+prtstat:	.EQU $37E8	; Printer Status (Read) & Data (Write)
+diskstat:	.EQU $37EC	; Disk controller status
+disktrk:	.EQU $37ED	; Disk track select
+disksect:	.EQU $37EE	; Disk sector select
+diskdata:	.EQU $37EF	; Disk data byte
 ;
-kbdmatrix:	.EQU $3800	; keyboard matrix start (100H bytes)
-vidmem:		.EQU $3C00	; start of video RAM (400H bytes)
+#ENDIF
+;
+kbdmatrix:	.EQU $3800	; Keyboard matrix start (100H bytes)
+vidmem:		.EQU $3C00	; Video RAM start (400H bytes)
 ;
 ; ----------------------------------------------------------------------
 ;  Memory Map
