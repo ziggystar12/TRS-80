@@ -1426,25 +1426,26 @@ DSPRD:	ld	a,(ix+5)	;049a - the cursor on/off flag
 ; ----------------------------------------------------------------------
 ; 04A1H – Go to the beginning of the line – “DSPBOL”
 ; ----------------------------------------------------------------------
-DSPBOL:	ld	a,l		;04a1
-	and	$C0		;04a2
-	ld	l,a		;04a4
+DSPBOL:	ld	a,l		;04a1 - the LSB of the current position
+	and	$C0		;04a2 - point to the beginning of the line, zero the lowest 6 bits
+	ld	l,a		;04a4 - save it back
 	ret			;04a5
 ; ----------------------------------------------------------------------
-; 04A6H – Handle graphic characters – “DSPHRC”
+; 04A6H – Handle graphic (NON ASCII) characters – “DSPHRC”
+;   Called for characters $80 - $FF
 ; ----------------------------------------------------------------------
-DSPGRC:	cp	$C0		;04a6
-	jr	c,DSPCHR	;04a8
-	sub	$C0		;04aa
-	jr	z,DSPSKP	;04ac
-	ld	b,a		;04ae
+DSPGRC:	cp	$C0		;04a6 - check for Space compression Character
+	jr	c,DSPCHR	;04a8 - It is Not. It is normal graphic, so display graphic
+	sub	$C0		;04aa - convert into the number of spaces to display
+	jr	z,DSPSKP	;04ac - $C0 means display 0 spaces, so Finish
+	ld	b,a		;04ae - load the number of spaces to print
 ; ----------------------------------------------------------------------
 ; 04AFH – Handle Space Compression characters – “DSPSPC”
 ; ----------------------------------------------------------------------
-DSPSPC:	ld	a,SPACE		;04af
-	call	DSPOUT		;04b1
-	djnz	DSPSPC		;04b4
-	jr	DSPSKP		;04b6
+DSPSPC:	ld	a,SPACE		;04af - a space character
+	call	DSPOUT		;04b1 - Display It
+	djnz	DSPSPC		;04b4 - Dec B, If more spaces then loop back
+	jr	DSPSKP		;04b6 - Finish Off
 ; ----------------------------------------------------------------------
 ; 04B8H – Turn the cursor on – “DSPCON”
 ; ----------------------------------------------------------------------
