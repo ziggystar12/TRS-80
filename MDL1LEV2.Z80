@@ -485,16 +485,16 @@ INIT2:	ld	de,FDIVC	;0075 - Ram location - of Level II BASIC support routines.
 	ldir			;007e - Move the routines
 ;
 ;  Initialises String Buffer
-	ld	hl,BUFINI	;0080 - $41E5 RAM String Buffer Pointer
+	ld	hl,BUFINI	;0080 - String Buffer Area in RAM (41E5H)
 	ld	(hl),':'	;0083 - save a colon
-	inc	hl		;0085
-	ld	(hl),b		;0086
-	inc	hl		;0087
-	ld	(hl),','	;0088
-	inc	hl		;008a
+	inc	hl		;0085 - next location
+	ld	(hl),b		;0086 - write a 0, B reg should be zero
+	inc	hl		;0087 - next location
+	ld	(hl),','	;0088 - save a comma
+	inc	hl		;008a - next location
 ;
 ; This loads 40A7H with the I/O buffer location address 41E8H.
-; (40A7H is the I/O buffer pointer and can be changed to relocate the buffer.)
+; (40A7H is the I/O buffer pointer and contents be changed to relocate the buffer.)
 	ld	(BUFPNT),hl	;008b
 ;
 ; Fills the RAM locations pointing to all 28 DOS BASIC commands,
@@ -513,10 +513,10 @@ ERLOPS:	ld	(hl),OPJPNN	;0096 - opcode (1st byte) for JP nnnn
 ; Set DOS Exit links to RET instructions (41A6-41E2)
 	ld	b,21		;009f - 21 DOS Exits
 LOPRTS:	ld	(hl),OPRET	;00a1 - Store RET OpCode
-	inc	hl		;00a3
+	inc	hl		;00a3 - and advance to the next location (3 bytes)
 	inc	hl		;00a4
 	inc	hl		;00a5
-	djnz	LOPRTS		;00a6
+	djnz	LOPRTS		;00a6 - and loop if required
 ;
 ; The rest of the initialization routine. Asks MEMORY SIZE ?,
 ; sets the memory pointers accordingly and prints RADIO SHACK LEVEL II BASIC ,
@@ -536,16 +536,16 @@ MEMGET:	ld	hl,MEMMSG	;00b5 - MEMORY SIZE? message
 ;
 ; start testing RAM at 434CH towards FFFFH
 	ld	hl,MEMEND+$14C	;00c4 - starting address for the memory size check (434C)
-LOOPMM:	inc	hl		;00c7
-	ld	a,h		;00c8
-	or	l		;00c9
+LOOPMM:	inc	hl		;00c7 - next ram location
+	ld	a,h		;00c8 - MSB of ram location
+	or	l		;00c9 - combine with LSB of ram location
 	jr	z,USEDEF	;00ca - if the current memory pointer HL is equal to zero
-	ld	a,(hl)		;00cc
-	ld	b,a		;00cd
-	cpl			;00ce
-	ld	(hl),a		;00cf
-	cp	(hl)		;00d0
-	ld	(hl),b		;00d1
+	ld	a,(hl)		;00cc - get byte at memory location
+	ld	b,a		;00cd - save it
+	cpl			;00ce - and invert it (A) for test
+	ld	(hl),a		;00cf - write it back to ram
+	cp	(hl)		;00d0 - retrieve and compare test value
+	ld	(hl),b		;00d1 - and save original value back
 	jr	z,LOOPMM	;00d2 - loop back until the end of memory is found
 	jr	USEDEF		;00d4 - If the address didn’t exist, have reached HIMEM
 TYPMEM:	call	LINGET		;00d6
@@ -650,7 +650,9 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 ;
 #IFDEF EACA80
 MEMMSG:	.DB	"READY ",0,0,0,0,0,0	; Disk Smith System-80 (EACA) Startup Messages
-HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
+HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
+        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
+        .DB     ENTER,ENTER,ENTER,0
 #ELSE
 MEMMSG:	.DB	"MEMORY SIZE",0			     ; MEMORY SIZE V1.2
 HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 BASIC V1.2
@@ -862,7 +864,7 @@ CTON:	ld	a,(hl)		;01fe
 DEFDRV:
 #IFNDEF EACA80
     #IFDEF NO37EXH
-    	nop			;0212 - No IO so ignore
+    	nop			;0212 - No memory mapped IO so just ignore
     	nop
     	nop
     #ELSE
@@ -1382,7 +1384,7 @@ DSPGRP:	ld	a,c		;0467 - convert and display the charater
 	jr	nc,DSPGRC	;046f - display graphic
 #IFDEF LOWCASE
 	jr	DSPCHR		;0471 - Disable all Alpha CHR translation
-	nop
+	nop                     ;0473 - Fill Deleted code with NOP's
 	nop
 	nop
 	nop
@@ -1393,7 +1395,7 @@ DSPGRP:	ld	a,c		;0467 - convert and display the charater
 	nop
 	nop
 #ELSE
-	cp	$40		;0471 - is it number or symbol $20-$40
+	cp	$40		;0471 - is it number or symbol ASCII 20h - 40h
 	jr	c,DSPCHR	;0473 - then display it
 	sub	$40		;0475 - So now upper case A is 01h
 	cp	$20		;0477 - is it upper case case
@@ -1449,14 +1451,14 @@ DSPSPC:	ld	a,SPACE		;04af - a space character
 ; ----------------------------------------------------------------------
 ; 04B8H – Turn the cursor on – “DSPCON”
 ; ----------------------------------------------------------------------
-DSPCON:	ld	a,(hl)		;04b8
-DSPCN2:	ld	(ix+5),a	;04b9
+DSPCON:	ld	a,(hl)		;04b8 - get char at current cursor position
+DSPCN2:	ld	(ix+5),a	;04b9 - save it as the cursor on/off flag
 	ret			;04bc
 ; ----------------------------------------------------------------------
 ; 04BDH – Turn the cursor off – “DSPCOF”
 ; ----------------------------------------------------------------------
-DSPCOF:	xor	a		;04bd
-	jr	DSPCN2		;04be
+DSPCOF:	xor	a		;04bd - clear the flag to ZERO, indicating No cursor
+	jr	DSPCN2		;04be - save the Flag, and return
 ; ----------------------------------------------------------------------
 ; 04C0H – Home the cursor – “DSPHOM”
 ; ----------------------------------------------------------------------
@@ -1469,7 +1471,7 @@ DSPHOM:	ld	hl,vidmem	;04c0 - starting address of video memory
 ; ----------------------------------------------------------------------
 ; 04CEH – Backspace – “DSPBSP”
 ; ----------------------------------------------------------------------
-DSPBSP:	dec	hl		;04ce
+DSPBSP:	dec	hl		;04ce - move cursor back 1 character
 	ld	a,(CAST)	;04cf - get shadow copy of Cassette port
 	and	CAST32		;04d2 - check for 32 char mode
 	jr	z,DSPBS2	;04d4 - 64 char mode sip forward
@@ -1488,22 +1490,27 @@ DSPLF2:	ld	a,l		;04e2 - get the lower order address
 	ret	nz		;04e6 - Return if still on the same line
 ; ----------------------------------------------------------------------
 ; 04E7H – Cursor Down – “DSPDWN”
+;  This is a space saver because if the cursor isn’t on the same line
+;  it needs to move down, so jumping here is also jumping to a CURSOR DOWN
+;  routine that was simply a fall-through from a wrap around
 ; ----------------------------------------------------------------------
-DSPDWN:	ld	de,$0040	;04e7
-	add	hl,de		;04ea
+DSPDWN:	ld	de,vidlin	;04e7 - 1 line of 64 characters
+	add	hl,de		;04ea - add to the cursor position
 	ret			;04eb
 ; ----------------------------------------------------------------------
 ; 04ECH – Cursor Right – “DSPRHT”
 ; ----------------------------------------------------------------------
-DSPRHT:	inc	hl		;04ec
-	ld	a,l		;04ed
-	and	$3F		;04ee
-	ret	nz		;04f0
+DSPRHT:	inc	hl		;04ec - advance the cursor
+	ld	a,l		;04ed - LSB of the current cursor position
+	and	$3F		;04ee - Mask out the upper bits
+	ret	nz		;04f0 - Return if cursor still on the same line
 ; ----------------------------------------------------------------------
 ; 04F1H – Cursor Up – “DSPUP”
+;  Same trick as dealing with CURSOR DOWN if there was an overflow,
+;  this does a CURSOR UP if you back up too far
 ; ----------------------------------------------------------------------
-DSPUP:	ld	de,$FFC0	;04f1
-	add	hl,de		;04f4
+DSPUP:	ld   de,$10000-vidlin	;04f1 - negative video line length (-64)
+	add	hl,de		;04f4 - subtract 64 from current position
 	ret			;04f5
 ; ----------------------------------------------------------------------
 ; 04F6H – Set up 32-Character mode – “DSPETB”
@@ -1563,7 +1570,7 @@ DSPOUT:	ld	(hl),a		;0541 - write the charater to vide ram
 	jr	z,DSPOT2	;0548 - if not 32 character mode, skip over
 	inc	hl		;054a - Skip another screen location (32 char)
 DSPOT2:	ld	a,h		;054b
-	cp	$40		;054c - past end of screen at $40000
+	cp	$40		;054c - past end of screen at (4000h)
 	ret	nz		;054e - nothing to do
 	ld	de,$FFC0	;054f - => -64, ie one line of characters
 	add	hl,de		;0552 - move cursor back one line
@@ -1572,28 +1579,28 @@ DSPOT2:	ld	a,h		;054b
 ; 0554H – Part of the Display routine – “DSPROL”
 ;   Scroll the screen upward by one line
 ; ----------------------------------------------------------------------
-DSPROL:	ld	de,vidmem	;0554
-	ld	hl,vidmem+$40	;0557 - second line of vid memory
-	push	bc		;055a
-	ld	bc,15*64	;055b - move 15 lines
-	ldir			;055e
-	pop	bc		;0560
+DSPROL:	ld	de,vidmem	;0554 - starting address of video memory (3C00h)
+	ld   hl,vidmem+vidlin	;0557 - second line of vid memory
+	push	bc		;055a - Save BC
+	ld	bc,15*vidlin	;055b - 15 Lines of Video Memory
+	ldir			;055e - MOVE 15 LINES OF VIDEO MEMORY UP ONE LINE
+	pop	bc		;0560 - Restore BC
 	ex	de,hl		;0561
 	jr	DSPERF		;0562 - clear the last line
 ; ----------------------------------------------------------------------
 ; 0564H – Part of the Display routine – “DSPCR”
 ;   Display a carriage return / line feed
 ; ----------------------------------------------------------------------
-DSPCR:	ld	a,l		;0564
-	and	$C0		;0565
-	ld	l,a		;0567
-	push	hl		;0568
-	ld	de,$0040	;0569 - line length
-	add	hl,de		;056c
-	ld	a,h		;056d
-	cp	$40		;056e
-	jr	z,DSPROL	;0570
-	pop	de		;0572
+DSPCR:	ld	a,l		;0564 - LSB of the current cursor position
+	and	$C0		;0565 - make it’s at the start of the current line
+	ld	l,a		;0567 - put the value back.
+	push	hl		;0568 - Save current cursor position
+	ld	de,vidlin	;0569 - length of video display line (64 chars)
+	add	hl,de		;056c - add line to current cursor pos
+	ld	a,h		;056d - MSB of the current cursor position
+	cp	$40		;056e - is past end of video memory (+1)
+	jr	z,DSPROL	;0570 - if past the end, scroll the screen
+	pop	de		;0572 - Throw away saved cursor position
 ; ----------------------------------------------------------------------
 ; 0573H – Part of the Display routine – “DSPEOL”
 ;   Erase to the end of the line
@@ -1610,19 +1617,19 @@ DSPEOL:	push	hl		;0573
 ;   Erase to the end of the frame. clear the video screen from (including)
 ;   position N – where N is an integer between 0 and 1023 (decimal),
 ;   inclusive, to the end of the display, Load the HL Register with the
-;   value 3C00H + N and then CALL 057CH
+;   value 3C00H + N and then CALL DSPEOF
 ; ----------------------------------------------------------------------
-DSPEOF:	push	hl		;057c
-DSPERF:	ld	de,vidmem+$400	;057d - end of video memory
-DSPERA:	ld	(hl),SPACE	;0580
-	inc	hl		;0582
-	ld	a,h		;0583
-	cp	d		;0584
-	jr	nz,DSPERA	;0585
-	ld	a,l		;0587
-	cp	e		;0588
-	jr	nz,DSPERA	;0589
-	pop	hl		;058b
+DSPEOF:	push	hl		;057c - Save cursor position on the STACK
+DSPERF:	ld      de,vidmem+1024  ;057d - end of video memory (4000H)
+DSPERA:	ld	(hl),SPACE	;0580 - write a space to cursor
+	inc	hl		;0582 - next position
+	ld	a,h		;0583 - MSB of the video memory pointer
+	cp	d		;0584 - compare with end of VID ram ($40)
+	jr	nz,DSPERA	;0585 - Loop back if not finished
+	ld	a,l		;0587 - LSB of the video memory pointer
+	cp	e		;0588 - compare with end of VID ram ($0)
+	jr	nz,DSPERA	;0589 - Loop back if not finished
+	pop	hl		;058b - retrieve the saved cusor position
 	ret			;058c
 ;
 ; ======================================================================
@@ -1649,7 +1656,7 @@ PRTFF:	call	PRTSTA		;05a6 - Call the GET PRINTER STATUS routine
 	ld	a,LINEF		;05ab - We print line feed character(s)
 #IFNDEF EACA80
     #IFDEF NO37EXH
-    	nop			;05ad - Dont output since we dont have the hardware
+    	nop			;05ad - Dont output since we dont have memory mapped IO
     	nop
     	nop
     #ELSE
@@ -1670,7 +1677,7 @@ PRTIT2:	call	PRTSTA		;05b5 - Call the GET PRINTER STATUS routine
 	pop	af		;05ba
 #IFNDEF EACA80
     #IFDEF NO37EXH
-    	nop			;05ad - Dont output since we dont have the hardware
+    	nop			;05ad - Dont output since we dont have memory mapped IO
     	nop
     	nop
     #ELSE
@@ -10162,6 +10169,7 @@ diskdata:	.EQU $37EF	; Disk data byte
 ;
 kbdmatrix:	.EQU $3800	; Keyboard matrix start (100H bytes)
 vidmem:		.EQU $3C00	; Video RAM start (400H bytes)
+vidlin:		.EQU 64 	; Video RAM line Size (64 characters)
 ;
 ; ----------------------------------------------------------------------
 ;  Memory Map
@@ -10213,7 +10221,7 @@ STKTOP:	.EQU	RAM+$A0		; Start of String Storage Area (Stack). initial MEMSIZE-32
 CURLIN:	.EQU	RAM+$A2		; Current Line Number in a BASIC Program
 TXTTAB:	.EQU	RAM+$A4		; Start of Basic Program Storage. Pointer
 TTYPOS:	.EQU	RAM+$A6		; Cursor pos on VDU line. See POS function.
-BUFPNT:	.EQU	RAM+$A7		; Keyboard Input buffer. Pointer
+BUFPNT:	.EQU	RAM+$A7		; Keyboard Input buffer. Pointer typically to
 CASFLG:	.EQU	RAM+$A9		; contains 00H if INPUT from cassette
 RNDX:	.EQU	RAM+$AA		; Random number seed
 DIMFLG:	.EQU	RAM+$AE		; locate or create variable routine flag
@@ -10332,7 +10340,7 @@ FILIND:	.EQU	DEXT+54		; (222D) During READ processing when a variable has been r
 EXCHDS:	.EQU	DEXT+57		; (2***) From List, At end of READ processing (41DF)
 SYSOUT:	.EQU	DEXT+60		; (02B2) During SYSTEM command operation (41E2)
 ;
-BUFINI:	.EQU	RAM+$1E5	; String Buffer initialised colon null comma
+BUFINI:	.EQU	RAM+$1E5	; String Buffer initialised with -> colon null comma
 SMPSTK:	.EQU	RAM+$1F8	; Initial Stack address.
 ;
 MEMEND:	.EQU	RAM+$200	; End of Reserved RAM Communications area
