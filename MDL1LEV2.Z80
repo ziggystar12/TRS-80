@@ -656,9 +656,9 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 ;
 #IFDEF EACA80
 MEMMSG:	.DB	"READY ",0,0,0,0,0,0	; Disk Smith System-80 (EACA) Startup Messages
-HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
-        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
-        .DB     ENTER,ENTER,ENTER,0
+HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
+        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
+        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
 #ELSE
 MEMMSG:	.DB	"MEMORY SIZE",0			     ; MEMORY SIZE V1.2
 HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 BASIC V1.2
@@ -816,7 +816,7 @@ CLS:	ld	a,CHOME		;01c9 - ascii for cursor Home
 ;   A call to 01D3H reseeds the random number seed (location 40AB)
 ;   with the current contents of the refresh register.
 ; ----------------------------------------------------------------------
-RANDOM:	ld	a,r		;01d3
+RANDOM:	ld	a,r		;01d3 - R (refresh) Reg - semi random number.
 	ld	(RNDX+1),a	;01d5
 	ret			;01d8
 ;
@@ -841,24 +841,24 @@ CT3:	djnz	CT3		;01f5 - delay loop
 ; ----------------------------------------------------------------------
 ; 01F8H-01FDH – CASSETTE ROUTINE (TURN OFF CASSETTE) – “CTOFF”
 ; ----------------------------------------------------------------------
-CTOFF:	push	hl		;01f8
+CTOFF:	push	hl		;01f8 - Save The HL Register
 	ld	hl,$FB00	;01f9 - And Or Flags, turn off cassette
-	jr	CTCHG2		;01fc
+	jr	CTCHG2		;01fc - process this
 ;
 ; ----------------------------------------------------------------------
 ; 01FEH-0211H- CASSETTE ROUTINE (EVALUATE DRIVE NUMBER) – “CTON”
 ; ----------------------------------------------------------------------
-CTON:	ld	a,(hl)		;01fe
-	sub	$23		;01ff
-	ld	a,$00		;0201
-	jr	nz,DEFDRV	;0203
-	call	GETINT		;0205
-	SYNTAX	(',')		;0208 - rst 08h
-	ld	a,e		;020a
-	and	d		;020b
-	add	a,$02		;020c
-	jp	nc,FCERR	;020e
-	dec	a		;0211
+CTON:	ld	a,(hl)		;01fe - char from BASIC program pointer
+	sub	'#'		;01ff - Check for a # character
+	ld	a,$00		;0201 - A default value, doesnt set flags
+	jr	nz,DEFDRV	;0203 - Isnt a # char so process default = 0
+	call	GETINT		;0205 - get INT drive number from BASIC program -> DE
+	SYNTAX	(',')		;0208 - rst 08h - See if we have a Comma
+	ld	a,e		;020a - need to convert from the negative number to positive
+	and	d		;020b - combine the MSB with the LSB of the drive number
+	add	a,$02		;020c - add 2 to make the drive number positive
+	jp	nc,FCERR	;020e - If the drive number is invalid, FC ERROR
+	dec	a		;0211 - dec the drive number
 ;
 ; ----------------------------------------------------------------------
 ; 0212H-021DH – CASSETTE ROUTINE (TURN ON CASSETTE) “DEFDRV”
@@ -878,10 +878,10 @@ DEFDRV:
     #ENDIF
 #ELSE
 	out	(casport),a	;0212 - On Dick Smith System-80 (EACA) use IO port
-	nop			;0214
+	nop			;0214 - Nop since OUT is only 2 byte instruction
 #ENDIF
-	push	hl		;0215
-	ld	hl,$FF04	;0216 - turn on the cassette motor
+	push	hl		;0215 - Save HL Register
+	ld	hl,$FF04	;0216 - AND OR flags to turn on the cassette motor
 CTCHG2:	call	CTCHG		;0219 - output this command
 	pop	hl		;021c - current BASIC program pointer from the STACK
 	ret			;021d
@@ -1265,7 +1265,7 @@ CIORTN:	pop	de		;03dd - restore registers from the stack
 ;   the bit pattern obtained to ASCII and stores it in the A register.
 ; ----------------------------------------------------------------------
 KBDDRV:	ld	hl,KYBTSS	;03e3
-	ld	bc,kbdmatrix+$01;03e6
+	ld	bc,kbdmatrix+$01;03e6 - first keyboard matrix row
 	ld	d,$00		;03e9
 KEYLP:	ld	a,(bc)		;03eb
 	ld	e,a		;03ec
@@ -1306,7 +1306,7 @@ KEYDLP:	ld	a,c		;0402
 ; 040BH-0428H – Part of the Keyboard routine – “KEYFND”
 ;   We now have identified the key. Next we need to see if it is shifted
 ; ----------------------------------------------------------------------
-KEYFND:	ld	a,(kbdmatrix+$80);040b
+KEYFND:	ld	a,(kbdmatrix+$80);040b - value of the SHIFT key from 3880H
 	ld	b,a		;040e
 	ld	a,d		;040f
 	add	a,$40		;0410
@@ -1316,7 +1316,7 @@ KEYFND:	ld	a,(kbdmatrix+$80);040b
 	jr	nc,KEYRTN	;0418
 	add	a,$20		;041a
 	ld	d,a		;041c
-	ld	a,(kbdmatrix+$40);041d
+	ld	a,(kbdmatrix+$40);041d - value at keyboard memory row six
 	and	$10		;0420
 	jr	z,KEYRT2	;0422
 	ld	a,d		;0424
@@ -1882,22 +1882,22 @@ KLNCR:	push	af		;0662
 INIT:
 	out	(vidcmt),a	;0674 - reset the Video cassette latch, A=0
 ;
-INITA1:	ld	hl,INITR	;0676
-	ld	de,RAM		;0679 - starting address of the communications region
-	ld	bc,$0036	;067c
+INITA1:	ld	hl,INITR	;0676 - starting address of the RST’s and DCB’s
+	ld	de,RAM		;0679 - starting address of the RAM comms region
+	ld	bc,$0036	;067c - move 36 bytes
 	ldir			;067f - Move 6D2-707 to 4000-4035
-	dec	a		;0681
-	dec	a		;0682
+	dec	a		;0681 - count down by 2 starting at 0
+	dec	a		;0682 - so effective loop
 	jr	nz,INITA1	;0683 - Loop back until block move occurred 128 times
 ;
-	ld	b,$27		;0685
-CLRAM:	ld	(de),a		;0687
-	inc	de		;0688
-	djnz	CLRAM		;0689 - Copy 0 to $4036 - $4062
+	ld	b,$27		;0685 - 39 bytes of memory need to be zerod
+CLRAM:	ld	(de),a		;0687 - zero byte in memory starting at 4036h
+	inc	de		;0688 - next address
+	djnz	CLRAM		;0689 - loop until filled zero's till 4062h
 ; ----------------------------------------------------------------------
 ;  Check for a manual override
 ; ----------------------------------------------------------------------
-	ld	a,(kbdmatrix+$40);068b
+	ld	a,(kbdmatrix+$40);068b - value at keyboard BREAK KEY
 	and	$04		;068e - if the BREAK key is being pressed
 	jp	nz,INIT2	;0690 - Jump if the BREAK key was pressed
 ;
@@ -7174,7 +7174,7 @@ TABER:	call	GTBYTC		;2137 - evaluate the tab number, and return with the result 
 #IFDEF VER13
 	and	$7F		;213a - Result in A-reg. Do not let it exceed 127
 #ELSE
-	and	$3F		;213a - it doesn’t exceed 63
+	and	$3F		;213a - Do not let it exceed 63
 #ENDIF
 ;
 	ld	e,a		;213c
@@ -8491,11 +8491,11 @@ GIVDBL:	ld	a,l		;27ec
 ; 27F5-27FD – LEVEL II BASIC POS() ROUTINE – “FNPOS”
 ; ----------------------------------------------------------------------
 FNPOS:
-	ld	a,(TTYPOS)	;27f5
-SNGFLT:	ld	l,a		;27f8
-	xor	a		;27f9
-GIVINT:	ld	h,a		;27fa
-	jp	MAKINT		;27fb
+	ld	a,(TTYPOS)	;27f5 - Load A with the current cursor line position.
+SNGFLT:	ld	l,a		;27f8 - Load Value into L
+	xor	a		;27f9 - Zero A
+GIVINT:	ld	h,a		;27fa - HL now contains the Value
+	jp	MAKINT		;27fb - Convert the value to an unsigned Int
 ; ----------------------------------------------------------------------
 ; 27FE-2818 – LEVEL II BASIC USR(x) ROUTINE – “USRFN”
 ; ----------------------------------------------------------------------
@@ -9516,19 +9516,19 @@ NOOKCS:	.DB	"BAD"		;2ca5
 ;   the correspondence is given by subtracting 65536 from locations higher
 ;   than 32767 or by specifying a positive number up to 65535
 ; ----------------------------------------------------------------------
-PEEK:	call	FRCINT		;2caa
-	ld	a,(hl)		;2cad
-	jp	SNGFLT		;2cae
+PEEK:	call	FRCINT		;2caa - convert Value to Integer, HL contains LSB
+	ld	a,(hl)		;2cad - read memory location
+	jp	SNGFLT		;2cae - reuse some code to assign this to an unsigned int
 ;
 ; ----------------------------------------------------------------------
 ; 2CB1-2CBC – LEVEL II BASIC POKE ROUTINE – “POKE”
 ; ----------------------------------------------------------------------
-POKE:	call	GETIN2		;2cb1
-	push	de		;2cb4
-	SYNTAX	(',')		;2cb5 - rst 08h
-	call	GETBYT		;2cb7
-	pop	de		;2cba
-	ld	(de),a		;2cbb
+POKE:	call	GETIN2		;2cb1 - get integer address
+	push	de		;2cb4 - save integer address
+	SYNTAX	(',')		;2cb5 - rst 08h - check for comma
+	call	GETBYT		;2cb7 - get byte value to write
+	pop	de		;2cba - restore the address
+	ld	(de),a		;2cbb - perform the write of value to memory location
 	ret			;2cbc
 ;
 ; ----------------------------------------------------------------------
@@ -10148,11 +10148,11 @@ QED:	pop	bc		;2ff6
 ;
 ; ----------------------------------------------------------------------
 ; THE END OF THE LEVEL II BASIC ROMS
-	.DB	$DE		;2ffb
-	.DB	$C3		;2ffc
-	.DB	$C3		;2ffd
-	.DB	$44		;2ffe
-	.DB	$B2		;2fff
+	.DB	$DE		;2ffb - serves no purpose used for checksum
+	.DB	$C3		;2ffc - serves no purpose used for checksum
+	.DB	$C3		;2ffd - serves no purpose used for checksum
+	.DB	$44		;2ffe - serves no purpose used for checksum
+	.DB	$B2		;2fff - serves no purpose used for checksum
 ;
 ; ----------------------------------------------------------------------
 ;  Input Output Map
