@@ -1230,30 +1230,32 @@ LZRPOS:	ld	a,e		;03b6
 ;
 ; ----------------------------------------------------------------------
 ; 03C2H-03E2H – DRIVER ENTRY ROUTINE – “CIO”
-;   This routine is called from a RST 14 (with a device code of 01H in
-;   Register B), RST 1C (with a device code of 02H in Register B),
-;   and RST 24 (with a device code of 04H in Register B).
+;   This routine is called from a RST 14 GET (with a device code of 01H in
+;   Register B), RST 1C PUT (with a device code of 02H in Register B),
+;   and RST 24 CTL (with a device code of 04H in Register B).
 ; ----------------------------------------------------------------------
-CIO:	push	hl		;03c2
+CIO:	push	hl		;03c2 - Save HL, IX, DE registers on the stack
 	push	ix		;03c3
-	push	de		;03c5
-	pop	ix		;03c6
+	push	de		;03c5 - starting address of Device Drive
+	pop	ix		;03c6 - moved from DE to IX via the stack
 	push	de		;03c8
 	ld	hl,CIORTN	;03c9 - return address for device driver call
 	push	hl		;03cc - return address pushed to stack
-	ld	c,a		;03cd
-	ld	a,(de)		;03ce - device type code
-	and	b		;03cf
-	cp	b		;03d0
-	jp	nz,CIOSS	;03d1 - jump to DOS device Driver (4033)
-	cp	$02		;03d4
-	ld	l,(ix+1)	;03d6
-	ld	h,(ix+2)	;03d9
-	jp	(hl)		;03dc - Call driver entry address in HL
-CIORTN:	pop	de		;03dd - Device driver returns here
-	pop	ix		;03de
+	ld	c,a		;03cd - put character to process into C
+	ld	a,(de)		;03ce - device type code from the DCB
+	and	b		;03cf - Isolate device code bits, using B parameter
+	cp	b		;03d0 - check for equality with passed device type
+	jp	nz,CIOSS	;03d1 - if not same - jump to DOS device Driver (4033)
+	cp	$02		;03d4 - clear status flags
+	ld	l,(ix+1)	;03d6 - LSB of driver address
+	ld	h,(ix+2)	;03d9 - MSB of driver address
+	jp	(hl)		;03dc - Jump (and ret) to the driver address in HL
+;
+; Device driver returns here
+CIORTN:	pop	de		;03dd - restore registers from the stack
+	pop	ix		;03de - which were pushed in CIO code above
 	pop	hl		;03e0
-	pop	bc		;03e1
+	pop	bc		;03e1 - restore BC, pushed before jump to CIO
 	ret			;03e2
 ;
 ; ======================================================================
@@ -2015,7 +2017,7 @@ INITR:
 	nop			; typically LD A,A3 followed by RST 28
 	nop
 ; DOS Device Vectoring Routine
-	ld	a, 0		; 4033 - CALL DOS DEVICE DRIVER
+	ld	a, 0		; 4033 - CALL DOS DEVICE DRIVER (CIOSS)
 	ret			; typically will JP 44BBh
 ;
 ; ======================================================================
