@@ -333,6 +333,8 @@ rst20:	jp	mRST4		;0020
 ;
 ; ----------------------------------------------------------------------
 ; 0023H-0027H – DISK ROUTINE – "_CTL"
+;   Outputs a control byte to a logical device or FCB.
+;   DE = FCB and A = control byte
 ; ----------------------------------------------------------------------
 _CTL:	push	bc		;0023
 	ld	b,$04		;0024 - device type entry code
@@ -345,13 +347,18 @@ _CTL:	push	bc		;0023
 ;   This vector is only used by Disk BASIC. It is called by the BREAK key routine,
 ;   and can be used to intercept the BREAK key logic
 ; ----------------------------------------------------------------------
+_DOSCAL:
 rst28:	jp	mRST5		;0028
 ;
 ; ======================================================================
 ; 002BH – KEYBOARD ROUTINE – "_KBD" - Scan Keyboard
 ;
-;   Keyboard scanning routine. After CALLing 2BH, the A Register will contain
-;   the ASCII value for the key that was pressed, or ZERO if n key pressed
+;   This Routine Performs an instantaneous scan of the keyboard.
+;   After CALLing 2BH, the A Register will contain
+;   the ASCII value for the key that was pressed, or ZERO if no key pressed.
+;
+;   Apart from the AF Register Pair the DE Register Pair is also used by the routine.
+;   If you want to wait for a key to be pressed, you would use CALL 0049
 ; ----------------------------------------------------------------------
 _KBD:	ld	de,mKDCB	;002b
 	jr	_GET		;002e
@@ -376,6 +383,7 @@ rst30:	jp	mRST6		;0030
 ;  figure that is to be printed before CALLing this routine.
 ;  The DE Register Pair is used by the routine.
 ; ----------------------------------------------------------------------
+VDCHAR:
 _DSP:	ld	de,mDDCB	;0033 - video device control block.
 	jr	_PUT		;0036
 ;
@@ -392,16 +400,20 @@ rst38:	jp	mRST7		;0038
 ;
 ; ======================================================================
 ; 003BH – PRINTER ROUTINE – "$PRT"
-;
+;  Waits until printer is ready then prints charatcter.
+;  A = ASCII character. If BREAK is pressed, a return to caller is made
 ;  Character LPRINT routine. Same as 33H but outputs to line printer.
 ;  (Contents of A Register will be printed).
 ; ----------------------------------------------------------------------
+PRCHAR:
 _PRT:	ld	de,mPDCB	;003b
 	jr	_PUT		;003e
 ;
 ; ----------------------------------------------------------------------
-; 0040H – INPUT ROUTINE – "$KEYIN"
+; 0040H – INPUT ROUTINE – "$KEYIN" - GET A LINE FROM THE KEYBOARD
+;  takes keyboard entry until a carriage return, a break, or buffer overrun occurs.
 ; ----------------------------------------------------------------------
+KBLINE:
 _KEYIN:	jp	KEYIN		;0040
 	ret			;0043
 	nop			;0044
@@ -419,6 +431,7 @@ CIOJ:	jp	CIO		;0046
 ;   value for character entered is returned in A- register. Uses
 ;   A, status and DE registers.
 ; ----------------------------------------------------------------------
+KBWAIT:
 _KEY:	call	_KBD		;0049
 	or	a		;004c
 	ret	nz		;004d
@@ -449,6 +462,7 @@ KEYTAB:	.DB	ENTER,	ENTER	; ENTER
 ;  The duration of the delay, in microseconds, is the value of BC times 14.66.
 ;  Register A is used.
 ; ----------------------------------------------------------------------
+DELAY:
 PAUSE:	dec	bc		;0060
 	ld	a,b		;0061
 	or	c		;0062
@@ -675,7 +689,7 @@ L3ERR:	ld	e,ERRL3		;012d - Load Register E with the ?L3 ERROR code of 2CH
 	jp	ERROR		;012f
 ;
 ; ----------------------------------------------------------------------
-; 0132H-0134H –	LEVEL II BASIC POINT COMMAND ENTRY POINT – "GRPHCS" or "POINT"
+; 0132H-0134H –	LEVEL II BASIC POINT COMMAND ENTRY POINT – "POINT"
 ; ----------------------------------------------------------------------
 POINT:	GETCHR			;0132 - rst 10h
 	xor	a		;0133
@@ -688,7 +702,7 @@ POINT:	GETCHR			;0132 - rst 10h
 	.DB	LDBCNN		;0134
 ;
 ; ----------------------------------------------------------------------
-; 0135H-0137H – LEVEL II BASIC SET COMMAND – “SET”
+; 0135H-0137H – LEVEL II BASIC SET COMMAND ENTRY POINT – “SET”
 ; ----------------------------------------------------------------------
 SET:	ld	a,$80		;0135
 	.DB	LDBCNN		;0137 - See comment above about what this does
@@ -698,16 +712,20 @@ SET:	ld	a,$80		;0135
 ; ----------------------------------------------------------------------
 RESET:	ld	a,$01		;0138
 ;
-; 013AH-019CH GRAPHICS ROUTINE
+; ----------------------------------------------------------------------
+; 013AH-019CH GRAPHICS ROUTINE - Common Code for SET RESET and POINT
+;   A will be 0 if POINT, 80H if SET and 1 for RESET.
+; ----------------------------------------------------------------------
+;
 	push	af		;013a
-	SYNTAX	('(')		;013b - rst 08h
-	call	GETBYT		;013d
-	cp	$80		;0140
-	jp	nc,FCERR	;0142
-	push	af		;0145
-	SYNTAX	(',')		;0146 - rst 08h
-	call	GETBYT		;0148
-	cp	'0'		;014b - test to see if the character was alphabetic or alphanumeric
+	SYNTAX	('(')		;013b - rst 08h - all commands start with a (
+	call	GETBYT		;013d - get a numeric value X coordinate
+	cp	128		;0140 - is it greater than 128
+	jp	nc,FCERR	;0142 - if greater than 128 then an error
+	push	af		;0145 - Save coordinate’s X value on the STACK
+	SYNTAX	(',')		;0146 - rst 08h - then a comma
+	call	GETBYT		;0148 - get a numeric value Y coordinate
+	cp	$30		;014b - test to see if the character was alphabetic or alphanumeric
 	jp	nc,FCERR	;014d
 	ld	d,$FF		;0150
 LOPMD3:	inc	d		;0152
