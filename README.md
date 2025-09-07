@@ -1,8 +1,8 @@
 # TRS-80
 
-## Model 1 ROM Disassembled
+## Model 1 ROM Source Code
 
-This repository contains Disassembled well commented source code for Tandy TRS-80 Model 1 Level 2 BASIC ROMS. 
+This repository contains Disassembled, well commented source code for Tandy TRS-80 Model 1 Level 2 BASIC ROMS. 
 
 This source code has support for both V1.3 (the default), and V1.2 of the ROMS. For more information on the 
 differences see references below. Several additional (optional) patches can be applied (e.g. FreHD autoboot)
@@ -23,17 +23,18 @@ been very heavily documented over the years. However, this repository aims to ad
 ### Description
 
 Main Features
-* Fully Compilable Source Code for Model 1 Level 2 12KB ROMS
+* Fully Compilable Source Code for Model 1 Level 2 12KB ROMS.
 * Both 1.3 and 1.2 versions, plus EACA clone hardware.
 * Several optional patches have been included via `#DEFINE`
 
-While based of a disassembly (which can be low quality) the following work has been done: 
-* Replaced all disassembler generated labels with meaningful labels
+While originally based off a (low quality) disassembly, the following improvements have been made: 
+* Replaced all disassembler generated labels with meaningful labels.
 * Ensured all jumps (JR and JP) reference valid code labels.
-* Replaced all $3xxx hardware references with `.EQU` definitions
-* Replaced all $4xxx buffer references with `.EQU` definitions, with a single `.EQU $4000` reference
+* Replaced all $3xxx hardware references with `.EQU` definitions.
+* Replaced all $4xxx buffer references with `.EQU` definitions, with a single `.EQU $4000` reference.
+* Replaced all $xx byte references with appropriate decimal or ascii values, and/or `.EQU` definitions.
 * Replaced all generated op-code with Byte `.DB` definitions for DataTables/Text/Constants/Etc
-* Added code documentation from various sources at the code block / function level
+* Added code documentation from various sources at the code block / function level.
 * Replaced incorrect op-codes, where Better Else "Trick" was used. See Reference below.
 
 On the last point I was unaware of these optimisations until I worked on this code.
@@ -43,7 +44,8 @@ that save a few bytes by allowing Jumps to the second byte of 2 byte instruction
 ## Compiling
 
 This source code has been compiled with Telemark Assembler, and tested using a DIFF tool to ensure binary
-compatibility of the generated output.
+compatibility of the generated output. If you have issues compiling it with a different assembler
+please let me know how the code can be fixed
 
 ### Build Options
 
