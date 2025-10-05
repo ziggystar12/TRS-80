@@ -21,8 +21,8 @@
 ; Rom Additional Features
 ; #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
 ; #DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
-; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (requires VER13)
-; #DEFINE NO37EXH ; Uncomment to disable use of memory mapped devices at 37Ex
+; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (incl VER13, NMIHARD)
+; #DEFINE NO37EXH ; Uncomment to disable use of memory mapped devices at 37Ex (incl NMIHARD)
 ;
 ; Build Features
 ; #DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
@@ -68,6 +68,9 @@
 #IFDEF FREHDBT
     #IFNDEF VER13
         #DEFINE VER13 	; VER13 must be used if FreHD is defined
+    #ENDIF
+    #IFNDEF NMIHARD
+	#DEFINE NMIHARD	; NMIHARD must be used if FreHD is defined
     #ENDIF
 #ENDIF
 ;
@@ -475,17 +478,28 @@ PAUSE:	dec	bc		;0060
 ; is pressed (Non Maskable Interrupt address)
 ; The RESET button generates an NMI, not an actual reset.
 ; ----------------------------------------------------------------------
-NMI:	ld	sp,$0600	;0066 - wrong Stack Pointer. Replaced latter
-;
 #IFDEF NMIHARD
-	ld	a,$01		;0069 - Loading a valid disk status
-	nop			;006B - Which will ensure we start as if power-up
-#ELSE
-	ld	a,(diskstat)	;0069 - $FF if no expansion interface present
+;
+NMI:	jp	_START		;0066 - wrong Stack Pointer.
+;
+#IFDEF FREHDBT
+;				;If Fre HD we use this space for improved  hdboot routine
+HDBOOT	call	CLS		;0069 - Clear Screen
+	call	PAUSE		;006c - pause for a few seconds
+	jp	HDBOOT2		;006f - continue hdboot
 #ENDIF
+;
+	.FILL	(0072h - $,0)	;fill the space to next routine with ZERO's
+;
+#ELSE
+;
+NMI:	ld	sp,$0600	;0066 - wrong Stack Pointer. Replaced latter
+	ld	a,(diskstat)	;0069 - $FF if no expansion interface present
 	inc	a		;006C
 	cp	$02		;006D - did we detect a disk controller
 	jp	nc,_START	;006F - If a disk is present START as if power-up
+;
+#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ; Alternative entry point to BASIC. See 06CCH for more details
@@ -606,7 +620,12 @@ USEDEF:	dec	hl		;00e7 - minus 1
 ; 00FFH-0112H – HDBOOT - FreHD HD bootup routine
 ; using space saved by HDGMSG startup message
 ; ----------------------------------------------------------------------
-HDBOOT:	ld	a,ROM_MODEL_1	;00ff - ROM parameter to FreHD. 1 for Model1.
+;
+#IFNDEF NMIHARD
+HDBOOT:				; if NMIHARD is not enabled HDBOOT starts here.
+#ENDIF
+;
+HDBOOT2: ld	a,ROM_MODEL_1	;00ff - ROM parameter to FreHD. 1 for Model1.
         out	(WRITEROM),a	;0101 - write the value
         in	a,(READROM)	;0103 - read response
         cp	0FEh		;0105 - FE is FreHD present and valid code!
@@ -624,9 +643,9 @@ HDBOOT:	ld	a,ROM_MODEL_1	;00ff - ROM parameter to FreHD. 1 for Model1.
 ; ----------------------------------------------------------------------
 ;
 #IFDEF EACA80
-MEMMSG:	.DB	"READY ",0,0,0  ; Disk Smith System-80 (EACA) Ready Message
+MEMMSG:	.DB	"READY ",0,0,0  ; EACA-80 Mem Size Message (V1.3)
 #ELSE
-MEMMSG:	.DB	"MEM SIZE",0	; Radio Shack Mem Size V1.3
+MEMMSG:	.DB	"MEM SIZE",0	; RS Mem Size Message V1.3
 #ENDIF
 
 #IFNDEF FREHDBT
@@ -634,10 +653,10 @@ MEMMSG:	.DB	"MEM SIZE",0	; Radio Shack Mem Size V1.3
 		; saving enough space for the HDBOOT routine (00FFH) above
 
 #IFDEF EACA80
-		; Disk Smith System-80 (EACA) has Blank Message
+		; EACA-80 L2 Basic (blank) Message V1.3
 HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
 #ELSE
-HDGMSG:	.DB	"R/S L2 BASIC",ENTER,0 ; Radio Shack L2 BASIC V1.3
+HDGMSG:	.DB	"R/S L2 BASIC",ENTER,0 ; RS L2 Basic Message V1.3
 #ENDIF
 ;
 #ENDIF
@@ -669,13 +688,14 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 ; ----------------------------------------------------------------------
 ;
 #IFDEF EACA80
-MEMMSG:	.DB	"READY ",0,0,0,0,0,0	; Disk Smith System-80 (EACA) Startup Messages
+MEMMSG:	.DB	"READY ",0,0,0,0,0,0	; EACA-80 Mem Size Message V1.2
+		; EACA-80 L2 Basic (blank) Message V1.2
 HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
         .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
         .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
 #ELSE
-MEMMSG:	.DB	"MEMORY SIZE",0			     ; MEMORY SIZE V1.2
-HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 BASIC V1.2
+MEMMSG:	.DB	"MEMORY SIZE",0			     ; RS Mem Size Message V1.2
+HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 Basic Message V1.2
 #ENDIF
 ;
 ; (finish V1.2)
@@ -1410,16 +1430,7 @@ DSPGRP:	ld	a,c		;0467 - convert and display the charater
 	jr	nc,DSPGRC	;046f - display graphic
 #IFDEF LOWCASE
 	jr	DSPCHR		;0471 - Disable all Alpha CHR translation
-	nop                     ;0473 - Fill Deleted code with NOP's
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
+	.FILL	(047Dh - $,0)	; Fill Deleted code bock (ELSE) with NOP's
 #ELSE
 	cp	$40		;0471 - is it number or symbol ASCII 20h - 40h
 	jr	c,DSPCHR	;0473 - then display it
@@ -1922,31 +1933,37 @@ CLRAM:	ld	(de),a		;0687 - zero byte in memory starting at 4036h
 ; This is the beginning of the routine which boots a diskette
 	ld	sp,TMPSTK	;0693 - $407D since Disk load will overite > $4200
 #IFDEF FREHDBT
+	; FreHD includes these 3 bytes by removing code below (06ac)
 	call	HDBOOT		;0696 - Call to the FreHD hd boot routines.
 #ENDIF
+;
 #IFDEF NO37EXH
-	ld	a,$FF		;0069 - Load an invalid Disk status
-	nop			;006B - which will ensure we skip Disk Boot
+;
+; (start no Floppy boot Support)
+;
+	jp	INIT2		;0696 - Dont detect disk controller, JP to L2 Basic init
+;
+	.FILL	(069Fh - $,0)	;fill the space to next routine with ZERO's
+;
+; ----------------------------------------------------------------------
+; 069FH-06CBH – IGNORE Bootstrap from Diskette – "BOOT"
+; ----------------------------------------------------------------------
+BOOT:	jp	_START		;069f - NO DISK - Just do Power Up cycle
+;
+	.FILL	(06CCh - $,0)	;fill the space to next routine with ZERO's
+;
+; (end no Floppy boot Support)
+;
 #ELSE
+;
+; (start of Floppy boot Support)
+;
 	ld	a,(diskstat)	;0696 - status of the disk controller (37ECH)
-#ENDIF
 	inc	a		;0699
 	cp	$02		;069a - is disk controller present.
 	jp	c,INIT2		;069c - Jump to Level II Init if no disk controller
-;   fallthrough
 ;
-#IFDEF NO37EXH
-;
-; ----------------------------------------------------------------------
-; 069FH-06CBH – Bootstrap from Diskette – "BOOT"
-; Ignore Disk Boot - Since we dont have a Floppy Disk Controller
-; THIS REPLACES THE BOOT CODE BELOW!!!!
-; ----------------------------------------------------------------------
-BOOT:	jp	_START		;069f - If a disk is present START as if power-up
-	.FILL	(RESETR - $,0)	; fill the space to next routine with ZERO's
-;
-#ELSE
-;
+;   fallthrough for floppy boot
 ; ----------------------------------------------------------------------
 ; 069FH-06CBH – Bootstrap from Diskette – "BOOT"
 ; Now we know (can assume) there is a disk controller and we should boot it.
@@ -1977,6 +1994,8 @@ BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
 	inc	c		;06c6 - next mem address
 	jr	nz,BOOTLP	;06c7 - Loop until whole 256 byte sector has been read
 	jp	MEMEND		;06c9 - Hand execution to the boot sector code $4200
+;
+; (end of Floppy boot Support)
 ;
 #ENDIF
 ;
