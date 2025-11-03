@@ -1609,11 +1609,11 @@ l05bch:
 l05c5h:
 	push hl			;05c5
 l05c6h:
-	ld de,04000h		;05c6
+	ld de,04000h		;05c6 - todo fix
 l05c9h:
 	ld (hl),020h		;05c9
-	inc hl			;05cb
-	rst 18h			;05cc
+	inc hl			;05cb - todo fix rst
+	CPDEHL			;05cc - RST 18
 	jr nz,l05c9h		;05cd
 	pop hl			;05cf
 	ret			;05d0
@@ -1803,7 +1803,7 @@ l0674h:
 	jr z,l068ah		;0683
 	and b			;0685
 	cp b			;0686
-	jp nz,04033h		;0687
+	jp nz,CIOSS		;0687
 l068ah:
 	and b			;068a
 	cp 002h			;068b
@@ -1818,18 +1818,18 @@ l0694h:
 	ret			;0699
 l069ah:
 	xor a			;069a
-	ld (0409fh),a		;069b
+	ld (PARQTD),a		;069b
 	ld d,0ffh		;069e
 	jp PLOOP3		;06a0
 l06a3h:
 	and 0fdh		;06a3
-	ld (0409fh),a		;06a5
+	ld (PARQTD),a		;06a5
 l06a8h:
 	ld a,03ah		;06a8
 l06aah:
 	or a			;06aa
 	jp p,l06e2h		;06ab
-	ld a,(0409fh)		;06ae
+	ld a,(PARQTD)		;06ae
 	rra			;06b1
 	jr c,l06e2h		;06b2
 	rra			;06b4
@@ -1874,14 +1874,14 @@ l06dfh:
 l06e2h:
 	jp PLOOP		;06e2
 sub_06e5h:
-	ld a,(0409fh)		;06e5
+	ld a,(PARQTD)		;06e5
 	or 002h			;06e8
 l06eah:
-	ld (0409fh),a		;06ea
+	ld (PARQTD),a		;06ea
 	xor a			;06ed
 	ret			;06ee
 sub_06efh:
-	ld a,(0409fh)		;06ef
+	ld a,(PARQTD)		;06ef
 	or 004h			;06f2
 	jr l06eah		;06f4
 l06f6h:
@@ -10174,7 +10174,7 @@ sub_31bdh:
 ; 31C0 - Turn Off The Cassette
 ; -------------------------------------------------
 l31c0h:
-	ld a,(04213h)		;31c0
+	ld a,(04213h)		;31c0 - todo fix
 	out (maskprt),a		;31c3
 	in a,(vidcmt)		;31c5
 	ld a,(SHADEC)		;31c7 - shadow port EC
@@ -10206,12 +10206,11 @@ sub_31f3h:
 	out (vidcmt),a		;31f4
 	ret			;31f6
 l31f7h:
-	ld a,(hl)		;31f7
-	sub 023h		;31f8
-	jp nz,l0253h		;31fa
-	call GETINT		;31fd
-	rst 8			;3200
-	inc l			;3201
+	ld 	a,(hl)		;31f7
+	sub 	023h		;31f8
+	jp 	nz,l0253h	;31fa
+	call 	GETINT		;31fd
+	SYNTAX	(',')		;3200
 	ret			;3202
 l3203h:
 	ld b,008h		;3203
@@ -10219,10 +10218,10 @@ l3205h:
 	call sub_3220h		;3205
 	djnz l3205h		;3208
 l320ah:
-	ld a,(04212h)		;320a
+	ld a,(04212h)		;320a - todo fix
 	inc a			;320d
 	and 05fh		;320e
-	ld (04212h),a		;3210
+	ld (04212h),a		;3210 - todo fix
 	jr nz,l321dh		;3213
 	ld a,(03c3fh)		;3215
 	xor 00ah		;3218
@@ -10441,7 +10440,7 @@ l3353h:
 l335ch:
 	ld hl,04b42h		;335c
 	ld (03c3eh),hl		;335f
-	jp 04203h		;3362
+	jp 04203h		;3362 - todo fix
 l3365h:
 	ld e,001h		;3365
 	jr l336bh		;3367
@@ -10478,7 +10477,7 @@ l338eh:
 	call sub_3060h		;338e
 	jr nz,l33a3h		;3391
 	ld bc,03880h		;3393
-	ld hl,04018h		;3396
+	ld hl,04018h		;3396 - todo fix
 	ld a,(bc)		;3399
 	and 002h		;339a
 	ld e,a			;339c
@@ -10498,7 +10497,7 @@ l33a3h:
 l33b4h:
 	ld (04224h),a		;33b4 - todo fix
 	ld bc,03801h		;33b7 - todo kbd matrix ?
-	ld hl,04036h		;33ba - todo fix
+	ld hl,KYBTSS		;33ba
 	ld d,000h		;33bd
 l33bfh:
 	ld a,(bc)		;33bf
@@ -10513,11 +10512,11 @@ l33bfh:
 	and (hl)		;33cf
 	jr nz,l33dah		;33d0
 	sbc hl,hl		;33d2
-	ld (04201h),hl		;33d4
+	ld (04201h),hl		;33d4  - todo fix
 	jp 0307dh		;33d7
 l33dah:
 	push hl			;33da
-	ld hl,(04201h)		;33db
+	ld hl,(04201h)		;33db - todo fix
 	inc hl			;33de
 	ld (04201h),hl		;33df
 	ld de,(041ffh)		;33e2 -todo ram address fix
@@ -10563,7 +10562,7 @@ l3421h:
 	jr z,l3427h		;3423
 	set 6,d			;3425
 l3427h:
-	ld a,(04019h)		;3427
+	ld a,(04019h)		;3427 - todo fix
 	or a			;342a
 	jr z,l342fh		;342b
 	set 7,d			;342d
@@ -10583,7 +10582,7 @@ l3433h:
 	or a			;3443
 	jp z,030bdh		;3444
 l3447h:
-	ld hl,04224h		;3447
+	ld hl,04224h		;3447 - todo fix
 	cp 02ah			;344a
 	jr nz,l3452h		;344c
 	ld a,01fh		;344e
@@ -10593,7 +10592,7 @@ l3452h:
 	jp l30fdh		;3452 - Jump back to 30FDH to continue with a BREAK key check.
 l3455h:
 	im 1			;3455
-	ld sp,0407dh		;3457
+	ld sp,0407dh		;3457 - todo fix
 	out (nonmask),a		;345a
 	or 020h			;345c
 	out (contprt),a		;345e
@@ -10655,9 +10654,9 @@ l34cah:
 	ld a,081h		;34ca
 	out (0f4h),a		;34cc
 	ld hl,l3502h		;34ce
-	ld (0404ah),hl		;34d1
+	ld (0404ah),hl		;34d1 - todo fix
 	ld a,0c3h		;34d4
-	ld (04049h),a		;34d6
+	ld (04049h),a		;34d6 - todo fix
 	ld a,080h		;34d9
 	out (nonmask),a		;34db
 	ld bc,000f3h		;34dd
@@ -10682,7 +10681,7 @@ l3502h:
 	xor a			;3502
 	out (nonmask),a		;3503
 	ld hl,045edh		;3505
-	ld (04049h),hl		;3508
+	ld (04049h),hl		;3508 - todo fix
 	call sub_3518h		;350b
 	in a,(0f0h)		;350e
 	pop hl			;3510
@@ -10695,7 +10694,7 @@ sub_3518h:
 	nop			;351a
 	ret			;351b
 l351ch:
-	jp nz,04049h		;351c
+	jp nz,04049h		;351c - todo fix
 l351fh:
 	in 	a,(0e4h)	;351f
 	bit 	5,a		;3521
@@ -10722,7 +10721,7 @@ l351fh:
 	ld 	(hl),a		;3549
 	ld 	hl,(CURSOR)	;354a
 	jr 	z,l3554h	;354d
-	ld 	a,(04023h)	;354f
+	ld 	a,(04023h)	;354f - todo fix
 	jr 	l3556h		;3552
 l3554h:
 	ld a,020h		;3554
@@ -10780,7 +10779,7 @@ l3591h:
 	ld a,(SHADEC)		;3591 - shadow port EC
 	bit 0,a			;3594
 	ret z			;3596
-	ld a,(04216h)		;3597
+	ld a,(04216h)		;3597 - todo fix
 	cp 01eh			;359a
 	ret nz			;359c
 	ld hl,03c35h		;359d
@@ -10789,7 +10788,7 @@ l3591h:
 ; TIME$
 ;
 l35a0h:
-	ld de,04219h		;35a0
+	ld de,04219h		;35a0 - todo fix
 	ld c,03ah		;35a3
 l35a5h:
 	ld b,003h		;35a5
@@ -10815,7 +10814,7 @@ l35abh:
 ; DATE$
 ;
 l35bbh:
-	ld de,0421ch		;35bb
+	ld de,0421ch		;35bb - todo fix
 	ld c,02fh		;35be
 	jr l35a5h		;35c0
 ;
@@ -10837,17 +10836,17 @@ l35c2h:
 	ld hl,l35f1h		;35d4
 	push hl			;35d7
 	rra			;35d8
-	jp nc,04046h		;35d9
+	jp nc,04046h		;35d9 - todo fix
 	rra			;35dc
-	jp nc,0403dh		;35dd
+	jp nc,0403dh		;35dd - todo fix
 	rra			;35e0
-	jp nc,04206h		;35e1
+	jp nc,04206h		;35e1 - todo fix
 	rra			;35e4
-	jp nc,04209h		;35e5
+	jp nc,04209h		;35e5 - todo fix
 	rra			;35e8
-	jp nc,04040h		;35e9
+	jp nc,04040h		;35e9 - todo fix
 	rra			;35ec
-	jp nc,04043h		;35ed
+	jp nc,04043h		;35ed - todo fix
 	pop hl			;35f0
 l35f1h:
 	pop iy			;35f1
@@ -10933,7 +10932,7 @@ l3667h:
 	ret z			;3671
 	call KBBRK		;3672 - Check for a BREAK key only
 	jr z,l3667h		;3675
-	jp 04203h		;3677
+	jp 04203h		;3677 - todo fix
 l367ah:
 	in a,(0ebh)		;367a
 	ld (ix+3),a		;367c
@@ -10954,7 +10953,7 @@ l3689h:
 	ret z			;3693
 	call KBBRK		;3694 - Check for a BREAK key only
 	jr z,l3689h		;3697
-	jp 04203h		;3699
+	jp 04203h		;3699 - todo fix
 l369ch:
 	ld a,(ix+3)		;369c
 	or a			;369f
@@ -11126,14 +11125,14 @@ l376ch:
 l377bh:
 	cp 	022h		;377b
 	jr 	nz,l3789h	;377d
-	ld 	a,(0409fh)	;377f
+	ld 	a,(PARQTD)	;377f
 	xor 	001h		;3782
-	ld 	(0409fh),a	;3784
+	ld 	(PARQTD),a	;3784
 	ld 	a,022h		;3787
 l3789h:
 	cp 	03ah		;3789
 	jp 	nz,l06aah	;378b
-	ld 	a,(0409fh)	;378e
+	ld 	a,(PARQTD)	;378e
 	rra			;3791
 	jp 	c,l06a8h	;3792
 	rla			;3795
@@ -11143,7 +11142,7 @@ l3789h:
 ; BASIC TIMES (DATE$+" "+TIME$)
 ;
 l3799h:
-	rst 	10h		;3799 - todo fix this - macro
+	GETCHR			;3799
 	push 	hl		;379a
 	ld 	a,011h		;379b
 	call 	STRINI		;379d
@@ -11183,7 +11182,7 @@ sub_37d7h:
 	jp 	_DSP		;37d9
 l37dch:
 	ld 	hl,JT_DATTIM	;37dc - JP Vector for TIME$ routine
-	ld 	(04177h),hl	;37df - 4176H is the TIME$ vector, so that jump needs to be 3030H
+	ld 	(04177h),hl	;37df - todo fix - 4177H is the TIME$ vector, so that jump needs to be 3030H
 	jp 	READYE		;37e2
 ;
 	.DB	$AA		;37e5 - UNUSED
@@ -11278,6 +11277,7 @@ LPTPOS:	.EQU	RAM+$9B		; No. Of chars. In current print line
 PRTFLG:	.EQU	RAM+$9C		; Current output device flag. -VE=CAS, 0=vid, 1=print
 LINLEN:	.EQU	RAM+$9D		; Number of chars on video display line.
 CLMLST:	.EQU	RAM+$9E		; Number of chars on printed line.
+PARQTD:	.EQU	RAM+$9F		; Indicate if the parser is in a QUOTED STRING (Bit 0 high), REM (Bit 2 high), or DATA (Bit 1 high).
 ;
 STKTOP:	.EQU	RAM+$A0		; Start of String Storage Area (Stack). initial MEMSIZE-32
 CURLIN:	.EQU	RAM+$A2		; Current Line Number in a BASIC Program
