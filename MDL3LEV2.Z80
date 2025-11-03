@@ -4,6 +4,12 @@
 ; ----------------------------------------------------------------------
 ;     NOTE: this code has been formatted with 8 character tabs
 ; ----------------------------------------------------------------------
+; Disassembly Based off The following ROMS's
+;
+; ROM  Checksum - Part Number
+;  A     9639     8041364 - This is ROM A for every Model III Level II
+;  B     407C     8040332 - This is ROM A for every Model III Level II
+;  C     2EF8     8040316B - v2 - Rev B - 1980.
 ;
 ; Rom Version Definition
 ;
@@ -26,8 +32,7 @@
 ;      REFERENCES
 ; ----------------------------------------------------------------------
 ;
-;   • Ira Goldlang, TRS-80 ROM Information - [https://www.trs-80.com/wordpress/roms/]
-;   • Model III Level II BASIC ROM Versions - [todo]
+;   • Ira Goldlang, TRS-80 ROM Information - [https://www.trs-80.com/main-internal-rom-related.htm]
 ;   • Telemark Assembler - [https://www.cpcalive.com/docs/TASMMAN.HTM]
 ;
 ; ======================================================================
@@ -141,6 +146,7 @@ CPNN:	.EQU 	$FE	; CP nn - skip next bytye
 ; Comments (In Brackets) are the Keyboard mappings,
 ; ----------------------------------------------------------------------
 BREAK:	.EQU	$01	; (BREAK Key)
+ETX:	.EQU	$03	; End Of Text (Ascii)
 ;
 BACKS:	.EQU 	$08	; (LEFT  Arrow) - Backspace
 TAB:	.EQU 	$09	; (RIGHT Arrow) - Tab
@@ -431,9 +437,9 @@ INITIO:
 ; 006C - "$ROUTE" - Change I/O Device Routing
 ;
 ROUTE:
-	ld de,0421dh		;006c todo hard coded memory address
-	jr _PUT			;006f
-	nop			;0071
+	ld de,IOROUT		;006c - 421D IO Router DCB
+	jr _PUT			;006f - invoke the Driver
+	nop			;0071 - NOT USED
 ;
 ; ----------------------------------------------------------------------
 ; Alternative entry point to BASIC. See 06CCH or 1A19 for more details
@@ -733,13 +739,13 @@ PRSCN3:
 ;
 ; -------------------------------------------------------
 ; 01F8 - Turn Off The Cassette Motor - "$CSOFF"
-;
+; -------------------------------------------------------
 CTOFF:
 	jp JT_CTOFF		;01f8 - jump to extended rom routine
 ;
 ; -------------------------------------------------------
 ; 01FB-0201 - DELAY ROUTINE - "$DELAY" - ACTUAL ROUTINE
-;
+; -------------------------------------------------------
 DELAY2:
 	ld a,a			;01fb - Top of the loop, waste of some cycles
 	dec bc			;01fc - dec the main counter
@@ -748,94 +754,140 @@ DELAY2:
 	jr nz,DELAY2		;01ff - not finished so loop
 	ret			;0201
 ;
-; --------------------------------
+; -------------------------------------------------------
 ; Message Storage Area
-;
+; -------------------------------------------------------
 COPYMSG:
 	.DB	"(c) '80 Tandy" ;0202 Copyright message storage area.
 	.DB	ENTER, $1E, $3D
 ;
-; --------------------------------
-; 0212H - This continues a subroutine and was JUMPed to from 022CH. It zeroes A and all flags everything and RETURNs.
-; --------------------------------
-; todo the below is new code and needs documenting.
-l0212h:
-	xor a			;0212
+; -------------------------------------------------------
+; 0212H - This continues a subroutine and was JUMPed to from 022CH.
+;   It zeroes A and all flags everything and RETURNs.
+; -------------------------------------------------------
+RETRN0:
+	xor 	a		;0212 - Return A=ZERO
 	ret			;0213
 ;
-; --------------------------------
+; -------------------------------------------------------
 ; 0214 - Display a Carriage Return
-;
+; -------------------------------------------------------
 DISPCR:
-	ld a,ENTER		;0214
-	call _PRT		;0216
-	xor a			;0219
+	ld 	a,ENTER		;0214
+	call 	_PRT		;0216
+	xor 	a		;0219
 	ret			;021a
 ;
-l021bh:
-	ld a,(hl)		;021b
-	inc hl			;021c
-	cp 003h			;021d
-	ret z			;021f
-	call _DSP		;0220
-	cp 00dh			;0223
-	jr nz,l021bh		;0225
-	ret			;0227
+; -------------------------------------------------------
+; 021B-0227 - "$VDLINE" - Display a Line Until 03H or 0DH Reached
+;
+;  This subroutine displays a line (HL). The line must be terminated with
+;  an ASCII ETX (X'03') or carriage return (X'0D').
+;  If the terminator is a carriage return, it will be printed;
+;  if it is an ETX, it will not be printed.
+; -------------------------------------------------------
+VDLINE:
+	ld 	a,(hl)		;021b - get the byte
+	inc 	hl		;021c - and advance the pointer
+	cp 	ETX		;021d - compare with end of text
+	ret 	z		;021f - end of Text so return
+	call 	_DSP		;0220 - display the character
+	cp 	ENTER		;0223 - is it an ENTER
+	jr 	nz,VDLINE	;0225 - if not keep going, otherwise was ENTER
+	ret			;0227 - return if an ENTER
+
+; -------------------------------------------------------
+; 0228H - This continues a subroutine and was JUMPed to from 023DH.
+; -------------------------------------------------------
 l0228h:
-	ex (sp),hl		;0228
-	jp	JT_CTHEAD	;0229
+	ex 	(sp),hl		;0228 - Put HL (return address) into the memory location of the STACK pointer.
+	jp	JT_CTHEAD	;0229 - checks to see if we have a PRINT #
+;
+; -------------------------------------------------------
+; 022CH - BLINK ASTERISK routine
+;   alternatively displays and clears an asterisk in the upper right hand corner of the video display.
+; -------------------------------------------------------
 BCASIN:
-	jr l0212h		;022c
-l022eh:
+	jr 	RETRN0		;022c - This currently does nothing and returns!!!
+;
+; -------------------------------------------------------
+; 022E - READY but Enable Interrupts before returning.
+; -------------------------------------------------------
+READYE:
 	ei			;022e
-	jp 	READY		;022f
-	ccf			;0232
-	inc a			;0233
-	ret			;0234
+	jp 	READY		;022f - contine to READY
+;
+	ccf			;0232 - NOT USED
+	inc 	a		;0233 - NOT USED
+	ret			;0234 - NOT USED
+;
+; -------------------------------------------------------
+; 0235-0240 - CASSETTE ROUTINE - Read a Byte from Cassette - "CSIN"
+;   Read One Byte: Reads one byte from the currently selected unit.
+;   The byte read is returned in the A-register. Other registers preserved
+; -------------------------------------------------------
 CASIN:
-	push de			;0235
-	push bc			;0236
-	push hl			;0237
-	ld hl,(0420eh)		;0238
-	ex (sp),hl		;023b
-	ret			;023c
-l023dh:
-	push hl			;023d
-	ld hl,JT		;023e
-	jr l0228h		;0241
-l0243h:
+	push 	de		;0235 - save some registers
+	push 	bc		;0236
+	push 	hl		;0237
+	ld	hl,(TAPERD)	;0238 - tape read vector, address of 500/1500 baud routine
+	ex 	(sp),hl		;023b - put vector on stack
+	ret			;023c - and call the routine
+;
+; -------------------------------------------------------
+; 023D - This continues a subroutine and was JUMPed to from 028BH
+;   to to set the cassette write vector. It just PUSHes HL,
+;   puts 3000H into HL, and JUMPs out to 0228H
+; -------------------------------------------------------
+CSHWR1:
+	push 	hl		;023d
+	ld 	hl,JT_SLOWWR	;023e - slow write Vector
+	jr 	l0228h		;0241
+;
+; -------------------------------------------------------
+; 0243-024B - CASSETTE ROUTINE - Read a Byte from Cassette
+; -------------------------------------------------------
+CSRDON1:
 	di			;0243
-	call	JT_CTON		;0244
-	push hl			;0247
-	ld 	hl,JT_SLOWRD	;0248
-	jr l0228h		;024b
-l024dh:
-	push hl			;024d
-	ld hl,(0420ch)		;024e
-	ex (sp),hl		;0251
-	ret			;0252
+	call	JT_CTON		;0244 - turn on cassette
+	push 	hl		;0247
+	ld 	hl,JT_SLOWRD	;0248 - slow read vector
+	jr 	l0228h		;024b
+;
+; -------------------------------------------------------
+; 024D-0252 - CASSETTE ROUTINE - Write a Byte to Cassette
+; -------------------------------------------------------
+CASOUT1:
+	push 	hl		;024d - put a Temp value on the stack
+	ld 	hl,(TAPEWR)	;024e - Tape Write Vector for Fast or Slow
+	ex 	(sp),hl		;0251 - put he actual vector on the stack
+	ret			;0252 - and return to the routine
+;
+; todo the below is new code and needs documenting.
+; -------------------------------------------------------
+; -------------------------------------------------------
 l0253h:
-	ex (sp),hl		;0253
-	ld a,(04211h)		;0254
-	or a			;0257
-	jr z,l025dh		;0258
-	inc hl			;025a
-	inc hl			;025b
-	inc hl			;025c
+	ex 	(sp),hl		;0253
+	ld 	a,(04211h)	;0254
+	or 	a		;0257
+	jr 	z,l025dh	;0258
+	inc 	hl		;025a
+	inc 	hl		;025b
+	inc 	hl		;025c
 l025dh:
-	ex (sp),hl		;025d
+	ex 	(sp),hl		;025d
 	ret			;025e
 l025fh:
-	pop bc			;025f
+	pop 	bc		;025f
 	ret			;0260
 TWOCSO:
-	call CASOUT		;0261
+	call 	CASOUT		;0261
 CASOUT:
-	jr l024dh		;0264
+	jr 	CASOUT1		;0264
 ;
-; --------------------
+; -------------------------------------------------------
 ; 0266 - Storage location for the maximum number of seconds in a minute, minutes in an hour, hours in a day, and days in a month
-; --------------------
+; -------------------------------------------------------
 ;
 l0266h:
 	.DB	60, 60, 24 		;0266 - Time Data (60, 60, 24).
@@ -843,49 +895,69 @@ l0266h:
 	.DB	$1F, $1E, $1F, $1F	;026D For DATE$.
 	.DB	$1E, $1F, $1E, $1F	;0271
 	.DB	0, 0			;0275 UNUSED
-l0277h;
-	.DB	$1D			;0277 Group Seperator
-	.DB	$1E			;0278 Record Seperator
-	.DB	"Diskette?", 03H 	;0279 Message Space
+MSGDISK:
+	.DB	CLINE			;0277 Start of Line
+	.DB	ELINE			;0278 Erase to EOL
+	.DB	"Diskette?", ETX 	;0279 Message Space, with $03 Terminator
 	.DB	$F2			;0283 UNUSED
 ;
-; ---------
+; -------------------------------------------------------
 ; 0284 - This subroutine is called by 2076H to turn the tape on, no header - it jumps out to 023DH
-; ---------
+; -------------------------------------------------------
 CWRTON:
 	JP 0287H		;0284
 ;
-; ---------
+; -------------------------------------------------------
 ; 0287 - Write Leader and Sync Byte - "$CSHWR"
-; ---------
+; -------------------------------------------------------
 CSHWR:
 	di			;0287
 	call	JT_CTON		;0288
-	jr l023dh		;028b
+	jr 	CSHWR1		;028b
+;
 sub_028dh:
-	ld a,(03840h)		;028d
-	and 004h		;0290
+	ld 	a,(03840h)	;028d
+	and 	004h		;0290
 	ret			;0292
+;
+; -------------------------------------------------------
+; 0293 - CASSETTE ROUTINE - Read the Header and Sync Bytes
+; -------------------------------------------------------
 CSRDON:
-	jp l0243h		;0293
+	jp 	CSRDON1		;0293
 CSRDON3:
-	jr l0243h		;0296
-	ld a,(04210h)		;0298
-	set 0,a			;029b
+	jr 	CSRDON1		;0296
+;
+; -------------------------------------------------------
+; -------------------------------------------------------
+	ld 	a,(SHADEC)	;0298 - shadow Port EC
+	set 	0,a		;029b
 l029dh:
-	ld (04210h),a		;029d
+	ld 	(SHADEC),a	;029d - Shadow Port EC
 	ret			;02a0
-	ld a,(04210h)		;02a1
-	res 0,a			;02a4
-	jr l029dh		;02a6
-	ret			;02a8
+; -------------------------------------------------------
+; 02A1 - Disable the Clock Display - "CLKOFF"
+;   No entry conditions. A is altered by this routine.
+; -------------------------------------------------------
+CLKOFF:
+	ld 	a,(SHADEC)	;02a1 - 4210H holds the bit mask for port ECH. Port ECH stores miscellaneous controls.
+	res 	0,a		;02a4
+	jr 	l029dh		;02a6
+	ret			;02a8 - NOT USED
+;
+
+
 
 
 
 ;
-ENBLK:	call	CADRIN		;02a9
+; -------------------------------------------------------
+; 02A9-02B1 - LEVEL II SYSTEM ROUTINE-ENTRY POINT- "GSYSTR"
+; -------------------------------------------------------
+GSYSTR:	call	CADRIN		;02a9
 	ld	(TEMP),hl	;02ac
 	call	CTOFF		;02af
+;
 ; ----------------------------------------------------------------------
 ; 02B2 – LEVEL II BASIC SYSTEM ROUTINE – “SYSTEM”
 ; ----------------------------------------------------------------------
@@ -916,7 +988,7 @@ CHKBYT:	ld	a,(hl)		;02da
 GETDT:	call	BCASIN		;02e7
 GETDT2:	call	CASIN		;02ea
 	cp	$78		;02ed
-	jr	z,ENBLK		;02ef
+	jr	z,GSYSTR		;02ef
 	cp	$3C		;02f1
 	jr	nz,GETDT2	;02f3
 	call	CASIN		;02f5
@@ -1091,75 +1163,78 @@ LZRPOS:	ld	a,e		;03b6
 	pop	af		;03c0
 	ret			;03c1
 ;
+; =====================================================================
+; 03C2H-0451H - MAIN PRINTER DRIVER
+;
+;   This is the Printer Driver. On entry, Register C to hold the character
+;   to be sent to the printer, and [IX] should point to the DCB,
 ; ----------------------------------------------------------------------
-; ----------------------------------------------------------------------
-
+PRTDRV:
+	ld a,c			;03c2 - the current character
+	cp ' '			;03c3 - Check to see if the character is a control character
+	jr nc,PRTDRV2		;03c5 - not control character - skip past some tests
 ; todo new code please document
-
-	ld a,c			;03c2
-	cp 020h			;03c3
-	jr nc,l03e5h		;03c5
 	cp 00dh			;03c7
-	jr z,l03f5h		;03c9
-	cp 00ch			;03cb
-	jr nz,l03ffh		;03cd
-	ld a,(ix+003h)		;03cf
-	sub (ix+004h)		;03d2
+	jr z,PRTDRV3		;03c9
+	cp FORMF		;03cb
+	jr nz,PRTDRV4		;03cd
+	ld a,(ix+3)		;03cf
+	sub (ix+4)		;03d2
 	ld b,a			;03d5
-l03d6h:
+PRTDRV1:
 	call sub_0440h		;03d6
-	ld a,00ah		;03d9
+	ld a,LINEF		;03d9
 	out (lineprt),a		;03db
-	djnz l03d6h		;03dd
-	ld (ix+005h),000h	;03df
+	djnz PRTDRV1		;03dd
+	ld (ix+5),000h		;03df
 	jr l0439h		;03e3
-l03e5h:
+PRTDRV2:
 	cp 080h			;03e5
-	jr nc,l0419h		;03e7
+	jr nc,PRTDRV6		;03e7
 	ld b,000h		;03e9
 	sub 020h		;03eb
 	ld c,a			;03ed
 	ld hl,l3145h		;03ee
 	add hl,bc		;03f1
 	ld c,(hl)		;03f2
-	jr l0403h		;03f3
-l03f5h:
-	ld a,(ix+005h)		;03f5
+	jr PRTDRV5		;03f3
+PRTDRV3:
+	ld a,(ix+5)		;03f5
 	or a			;03f8
 	ld a,c			;03f9
-	jr nz,l03ffh		;03fa
+	jr nz,PRTDRV4		;03fa
 	ld a,00ah		;03fc
 	ld c,a			;03fe
-l03ffh:
+PRTDRV4:
 	cp 020h			;03ff
-	jr c,l0419h		;0401
-l0403h:
-	ld a,(ix+006h)		;0403
+	jr c,PRTDRV6		;0401
+PRTDRV5:
+	ld a,(ix+6)		;0403
 	inc a			;0406
-	jr z,l0419h		;0407
-	cp (ix+005h)		;0409
-	jr nc,l0419h		;040c
+	jr z,PRTDRV6		;0407
+	cp (ix+5)		;0409
+	jr nc,PRTDRV6		;040c
 	call sub_0440h		;040e
 	ld a,00dh		;0411
 	out (lineprt),a		;0413
-	ld (ix+005h),000h	;0415
-l0419h:
+	ld (ix+5),000h	;0415
+PRTDRV6:
 	call sub_0440h		;0419
 	ld a,c			;041c
 	out (lineprt),a		;041d
-	inc (ix+005h)		;041f
+	inc (ix+5)		;041f
 	cp 00dh			;0422
-	jr z,l042ah		;0424
+	jr z,PRTDRV7		;0424
 	cp 00ah			;0426
 	jr nz,l043dh		;0428
-l042ah:
-	ld (ix+005h),000h	;042a
-	inc (ix+004h)		;042e
-	ld a,(ix+004h)		;0431
-	cp (ix+003h)		;0434
+PRTDRV7:
+	ld (ix+5),000h	;042a
+	inc (ix+4)		;042e
+	ld a,(ix+4)		;0431
+	cp (ix+3)		;0434
 	jr nz,l043dh		;0437
 l0439h:
-	ld (ix+004h),001h	;0439
+	ld (ix+4),001h	;0439
 l043dh:
 	xor a			;043d
 l043eh:
@@ -1178,13 +1253,13 @@ sub_044bh:
 	cp 030h			;044f
 	ret			;0451
 l0452h:
-	ld hl,l36bfh		;0452 - Copy from
-	ld de,mKDCB		;0455 - 4015 Memory Keyboard Device Control block
-	ld bc,$18		;0458 - to 4015H-402DH.
+	ld hl,KEYDCB		;0452 - Copy from ROM default DCB Table
+	ld de,mKDCB		;0455 - to 4015 Memory Keyboard Device Control block
+	ld bc,3*8		;0458 - Copy the 3 DCB's Key, Vid, and LPT
 	ldir			;045b
-	ld hl,SERDCB		;045d - Source Defaut DCB's for SERIAL
+	ld hl,SERDCB		;045d - Source Defaut DCB's for SERIAL - 36F9
 	ld de,SERINP		;0460 - Target address 41E5 Serial Input DCB
-	ld bc,$18		;0463 - to 41E5H-41FDH.
+	ld bc,3*8		;0463 - to 41E5H-41FDH. 3 DCB's ae Copied
 	ldir			;0466
 	ret			;0468
 ;
@@ -1199,10 +1274,26 @@ sub_046bh:
 	ld (04214h),a		;046c - todo ram constant fix
 	ld hl,(040a4h)		;046f - todo ram constant fix
 	ret			;0472
+
+; ======================================================================
+; 0458H-058CH – VIDEO DISPLAY DRIVER – “DSPDRV”
+;
+;   This is the video driver. On entry, the character to be displayed
+;   should be in the C register. On exit, A would contain the character
+;   at the cursor (if called for an INPUT). This routine handles scrolling etc.
+;
+;   Register IX points to the DCB, so
+;   IX+0 = the DCB type,
+;   IX+1 = LSB of the Driver Address, IX+2 = MSB of the Driver Address,
+;   IX+3 = LSB of the Cursor Position, IX+4 = MSB of the Cursor Position,
+;   IX+5 = Cursor Character, cursor on off flag
+;   IX+6 = “D”, and IX+7=”O”
+; ----------------------------------------------------------------------
+DSPDRV:
 	di			;0473
-	ld l,(ix+003h)		;0474
-	ld h,(ix+004h)		;0477
-	ld a,(ix+005h)		;047a
+	ld l,(ix+3)		;0474
+	ld h,(ix+4)		;0477
+	ld a,(ix+5)		;047a
 	or a			;047d
 	jr z,l0481h		;047e
 	ld (hl),a		;0480
@@ -1220,19 +1311,19 @@ l048eh:
 	or 03ch			;0491
 	ld h,a			;0493
 	ld d,(hl)		;0494
-	ld a,(ix+005h)		;0495
+	ld a,(ix+5)		;0495
 	or a			;0498
 	jr z,l04a8h		;0499
-	ld (ix+005h),d		;049b
-	ld a,(ix+006h)		;049e
+	ld (ix+5),d		;049b
+	ld a,(ix+6)		;049e
 	cp 020h			;04a1
 	jr nc,l04a7h		;04a3
 	ld a,0b0h		;04a5
 l04a7h:
 	ld (hl),a		;04a7
 l04a8h:
-	ld (ix+003h),l		;04a8
-	ld (ix+004h),h		;04ab
+	ld (ix+3),l		;04a8
+	ld (ix+4),h		;04ab
 	xor a			;04ae
 	ld a,c			;04af
 	ei			;04b0
@@ -1243,7 +1334,7 @@ l04b2h:
 	ld l,a			;04b5
 	ret			;04b6
 l04b7h:
-	ld a,(ix+007h)		;04b7
+	ld a,(ix+7)		;04b7
 	or a			;04ba
 	ld a,c			;04bb
 	jr nz,l048bh		;04bc
@@ -1258,14 +1349,14 @@ l04c3h:
 l04cch:
 	ld a,(hl)		;04cc
 l04cdh:
-	ld (ix+005h),a		;04cd
+	ld (ix+5),a		;04cd
 	ret			;04d0
 l04d1h:
 	xor a			;04d1
 	jr l04cdh		;04d2
 l04d4h:
-	ld hl,03c00h		;04d4
-	ld a,(04210h)		;04d7
+	ld hl,vidmem		;04d4 - 3c00 video memory
+	ld a,(SHADEC)		;04d7 - shadow port EC
 	and 0fbh		;04da
 	call sub_0570h		;04dc
 	ld a,(04214h)		;04df
@@ -1277,7 +1368,7 @@ l04e4h:
 	jr l04e4h		;04e9
 l04ebh:
 	dec hl			;04eb
-	ld a,(04210h)		;04ec
+	ld a,(SHADEC)		;04ec - shadow port EC
 	and 004h		;04ef
 	jr z,l04f4h		;04f1
 l04f3h:
@@ -1286,7 +1377,7 @@ l04f4h:
 	ld (hl),020h		;04f4
 	ret			;04f6
 l04f7h:
-	ld a,(04210h)		;04f7
+	ld a,(SHADEC)		;04f7 - shadow Port EC
 	and 004h		;04fa
 	call nz,sub_04ffh	;04fc
 sub_04ffh:
@@ -1308,7 +1399,7 @@ l050eh:
 	add hl,de		;0511
 	ret			;0512
 l0513h:
-	ld a,(04210h)		;0513
+	ld a,(SHADEC)		;0513 - shadow port EC
 	or 004h			;0516
 	call sub_0570h		;0518
 	inc hl			;051b
@@ -1353,22 +1444,22 @@ l0521h:
 	jr z,l05c5h		;055d
 	ret			;055f
 l0560h:
-	ld a,(ix+007h)		;0560
+	ld a,(ix+7)		;0560
 	and 001h		;0563
 	xor 001h		;0565
-	ld (ix+007h),a		;0567
+	ld (ix+7),a		;0567
 	ret			;056a
 l056bh:
-	ld a,(04210h)		;056b
+	ld a,(SHADEC)		;056b - shadow port EC
 	xor 008h		;056e
 sub_0570h:
-	ld (04210h),a		;0570
+	ld (SHADEC),a		;0570 - shadow port EC
 	out (contprt),a		;0573
 	ret			;0575
 sub_0576h:
 	ld (hl),a		;0576
 	inc hl			;0577
-	ld a,(04210h)		;0578
+	ld a,(SHADEC)		;0578 - shadow port EC
 	and 004h		;057b
 	jr z,l0580h		;057d
 	inc hl			;057f
@@ -1381,8 +1472,8 @@ l0580h:
 l0588h:
 	ld a,(04214h)		;0588
 	and 007h		;058b
-	ld hl,03c00h		;058d
-	ld de,l03ffh+1		;0590
+	ld hl,vidmem		;058d - 3c00 video memory
+	ld de,PRTDRV4+1		;0590
 	push bc			;0593
 	ld bc,64		;0594 - Load BC with the number of characters per line (64 characters).
 	inc a			;0597
@@ -1615,8 +1706,8 @@ l0674h:
 l068ah:
 	and b			;068a
 	cp 002h			;068b
-	ld l,(ix+001h)		;068d
-	ld h,(ix+002h)		;0690
+	ld l,(ix+1)		;068d
+	ld h,(ix+2)		;0690
 	jp (hl)			;0693
 l0694h:
 	pop de			;0694
@@ -9766,8 +9857,9 @@ QED:	pop	bc		;2ff6
 ; ======================================================================
 ;
 ; JUMP TABLE
+; todo all the following should have referencs
 ;
-JT:
+JT_SLOWWR:
 	jp l325eh		;3000 - Jump to 325EH for a SLOW tape header write
 	jp l329bh		;3003 - Jump to 329BH for a FAST tape header write.
 JT_SLOWRD:
@@ -9786,6 +9878,7 @@ JT_INTHAND
 	jp l35fbh		;301b - Jump to 35FBH for RS-232 Initialization.
 	jp l365ah		;301e - Jump to 365AH for RS-232 Input
 	jp l3680h		;3021 - Jump to 3680H for RS-232 Output
+JT_KEYINPUT:
 	jp l338eh		;3024 - Jump to 338EH for Keyboard Input
 	jp l3739h		;3027 - Jump for I/O Re-Router
 JT_CTHEAD:
@@ -9807,9 +9900,9 @@ JT_DATTIM:
 NMIHAND:
 	in a,(0e4h)		;3039 - todo we need t define all the in and out ports.
 	bit 5,a			;303b
-	jp l351ch		;303d - todo fix addr
+	jp l351ch		;303d
 	jr JT_BOOTS		;3040
-	jp l37b5h		;3042 - todo fix addr
+	jp l37b5h		;3042
 ;
 ; -------------------------------------------------
 ; 3045 - Keyboard Rows 0-3, Unshifted, No Caps Lock
@@ -9983,7 +10076,7 @@ l31c0h:
 	ld a,(04213h)		;31c0
 	out (maskprt),a		;31c3
 	in a,(vidcmt)		;31c5
-	ld a,(04210h)		;31c7
+	ld a,(SHADEC)		;31c7 - shadow port EC
 	and 0fdh		;31ca
 	call sub_31edh		;31cc
 	ei			;31cf
@@ -10001,10 +10094,10 @@ l31d1h:
 	ld bc,07d00h		;31e2
 	jp DELAY		;31e5
 sub_31e8h:
-	ld a,(04210h)		;31e8
+	ld a,(SHADEC)		;31e8 - shadow port EC
 	or 002h			;31eb
 sub_31edh:
-	ld (04210h),a		;31ed
+	ld (SHADEC),a		;31ed - shadow port EC
 	out (contprt),a		;31f0
 	ret			;31f2
 sub_31f3h:
@@ -10085,8 +10178,8 @@ l325ah:
 	jr l3251h		;325c
 l325eh:
 	push hl			;325e
-	ld hl,l3241h		;325f
-	ld (0420ch),hl		;3262
+	ld hl,l3241h		;325f - address of he cassette write routine
+	ld (TAPEWR),hl		;3262 - Store the Address in tape write vector
 	ld b,053h		;3265
 	xor a			;3267
 l3268h:
@@ -10097,8 +10190,8 @@ l3268h:
 	jr l3297h		;3272
 l3274h:
 	push hl			;3274
-	ld hl,l3203h		;3275
-	ld (0420eh),hl		;3278
+	ld hl,l3203h		;3275 - address of he cassette read routine
+	ld (TAPERD),hl		;3278 - Store the Address in tape read vector
 l327bh:
 	ld b,040h		;327b
 	ld d,000h		;327d
@@ -10125,8 +10218,8 @@ l3298h:
 	ret			;329a
 l329bh:
 	push hl			;329b
-	ld hl,l32bah		;329c
-	ld (0420ch),hl		;329f
+	ld hl,l32bah		;329c - address of he cassette write routine
+	ld (TAPEWR),hl		;329f - Store the Address in tape write vector
 	ld b,000h		;32a2
 l32a4h:
 	ld a,055h		;32a4
@@ -10164,8 +10257,8 @@ l32cfh:
 	jp l320ah		;32d7
 l32dah:
 	push hl			;32da
-	ld hl,l32cah		;32db
-	ld (0420eh),hl		;32de
+	ld hl,l32cah		;32db - address of he cassette read routine
+	ld (TAPERD),hl		;32de - Store the Address in tape read vector
 	ld a,001h		;32e1
 	out (maskprt),a		;32e3
 l32e5h:
@@ -10404,7 +10497,7 @@ l3455h:
 	or 020h			;345c
 	out (contprt),a		;345e
 	ld a,081h		;3460
-	out (0f4h),a		;3462
+	out (0f4h),a		;3462 - todo fix all the IO addesses, make them constants
 	ld a,0d0h		;3464
 	out (0f0h),a		;3466
 	call sub_3518h		;3468
@@ -10412,11 +10505,11 @@ l3455h:
 	out (maskprt),a		;346d
 	ld a,00bh		;346f
 	out (0f0h),a		;3471
-	ld hl,INITR		;3473
-	ld de,04000h		;3476
-	ld bc,004Ch		;3479
+	ld hl,INITR		;3473 - Copy From Defaults at 36AA
+	ld de,RAM		;3476 - To The start of RAM
+	ld bc,$4C		;3479 -
 	ldir			;347c
-	ld hl,SERDCB		;347e
+	ld hl,SERDCB		;347e - Copy From Default Values at 36F9
 	ld de,SERINP		;3481 - 41E5 Serial Input DCB
 	ld bc,64		;3484 - move 64 bytes
 	ldir			;3487
@@ -10451,8 +10544,8 @@ l34b0h:
 	ld a,b			;34bb
 	or c			;34bc
 	jr nz,l34b0h		;34bd
-	ld hl,l0277h		;34bf
-	call l021bh		;34c2
+	ld hl,MSGDISK		;34bf
+	call VDLINE		;34c2
 	jr l34abh		;34c5
 l34c7h:
 	dec e			;34c7
@@ -10503,34 +10596,33 @@ sub_3518h:
 l351ch:
 	jp nz,04049h		;351c
 l351fh:
-	in a,(0e4h)		;351f
-	bit 5,a			;3521
-	jr z,l351fh		;3523
-	jp _START		;3525 - Jump to 0000H to restart the computer.
-	rst 38h			;3528
-l3529h:
-	ld de,l3591h		;3529
-	push de			;352c
-	in a,(0ech)		;352d
-	ld a,(04022h)		;352f
-	or a			;3532
-	jr z,l3557h		;3533
-	ld a,(0401ch)		;3535
-	or a			;3538
-	jr nz,l3557h		;3539
-	ld hl,0401ah		;353b
-	dec (hl)		;353e
-	jr nz,l3557h		;353f
-	ld (hl),007h		;3541
-	inc hl			;3543
-	ld a,(hl)		;3544
-	and 001h		;3545
-	xor 001h		;3547
-	ld (hl),a		;3549
-	ld hl,(04020h)		;354a
-	jr z,l3554h		;354d
-	ld a,(04023h)		;354f
-	jr l3556h		;3552
+	in 	a,(0e4h)	;351f
+	bit 	5,a		;3521
+	jr 	z,l351fh	;3523
+	jp 	_START		;3525 - Jump to 0000H to restart the computer.
+	rst 	38h		;3528 - todo fix the RST replace with macro
+	ld 	de,l3591h	;3529
+	push 	de		;352c
+	in 	a,(0ech)	;352d
+	ld 	a,(04022h)	;352f - todo fix
+	or 	a		;3532
+	jr 	z,l3557h	;3533
+	ld 	a,(0401ch)	;3535
+	or 	a		;3538
+	jr 	nz,l3557h	;3539
+	ld 	hl,0401ah	;353b - todo fix
+	dec 	(hl)		;353e
+	jr 	nz,l3557h	;353f
+	ld 	(hl),007h	;3541
+	inc 	hl		;3543
+	ld 	a,(hl)		;3544
+	and 	001h		;3545
+	xor 	001h		;3547
+	ld 	(hl),a		;3549
+	ld 	hl,(CURSOR)	;354a
+	jr 	z,l3554h	;354d
+	ld 	a,(04023h)	;354f
+	jr 	l3556h		;3552
 l3554h:
 	ld a,020h		;3554
 l3556h:
@@ -10584,7 +10676,7 @@ l3583h:
 	inc (hl)		;358f
 	ret			;3590
 l3591h:
-	ld a,(04210h)		;3591
+	ld a,(SHADEC)		;3591 - shadow port EC
 	bit 0,a			;3594
 	ret z			;3596
 	ld a,(04216h)		;3597
@@ -10664,7 +10756,6 @@ l35f1h:
 	pop bc			;35f7
 	pop af			;35f8
 	ei			;35f9
-l35fah:
 	ret			;35fa
 ;
 ; ====================
@@ -10677,26 +10768,26 @@ l35fbh:
 	jr z,l363ah		;3600
 	xor a			;3602
 	out (0e8h),a		;3603
-	ld a,(ix+003h)		;3605
+	ld a,(ix+3)		;3605
 	out (0e9h),a		;3608
-	ld a,(ix+004h)		;360a
+	ld a,(ix+4)		;360a
 	or a			;360d
 	jr z,l363ah		;360e
 	out (0eah),a		;3610
 	ld iy,SERINP		;3612 - serial input DCB 41E5
 	call sub_3644h		;3616
-	ld a,(ix+005h)		;3619
+	ld a,(ix+5)		;3619
 	or a			;361c
 	jr z,l3623h		;361d
-	set 1,(iy+004h)		;361f
+	set 1,(iy+4)		;361f
 l3623h:
-	set 2,(iy+004h)		;3623
+	set 2,(iy+4)		;3623
 	ld iy,SEROUT		;3627 - serial out dcb 41ED
 	or a			;362b
 	jr z,l3632h		;362c
-	set 1,(iy+004h)		;362e
+	set 1,(iy+4)		;362e
 l3632h:
-	set 2,(iy+004h)		;3632
+	set 2,(iy+4)		;3632
 l3636h:
 	in a,(0e8h)		;3636
 	ei			;3638
@@ -10730,21 +10821,21 @@ l3653h:
 l365ah:
 	ld ix,SERINP		;365a - serial input DCB 41E5
 	xor a			;365e
-	ld (ix+003h),a		;365f
-	bit 2,(ix+004h)		;3662
+	ld (ix+3),a		;365f
+	bit 2,(ix+4)		;3662
 	ret z			;3666
 l3667h:
 	in a,(0eah)		;3667
 	bit 7,a			;3669
 	jr nz,l367ah		;366b
-	bit 1,(ix+004h)		;366d
+	bit 1,(ix+4)		;366d
 	ret z			;3671
 	call sub_028dh		;3672
 	jr z,l3667h		;3675
 	jp 04203h		;3677
 l367ah:
 	in a,(0ebh)		;367a
-	ld (ix+003h),a		;367c
+	ld (ix+3),a		;367c
 	ret			;367f
 ;
 ; ====================
@@ -10752,25 +10843,25 @@ l367ah:
 ;
 l3680h:
 	ld ix,SEROUT		;3680 - 41ED Serial Out DCB
-	bit 2,(ix+004h)		;3684
+	bit 2,(ix+4)		;3684
 	ret z			;3688
 l3689h:
 	in a,(0eah)		;3689
 	bit 6,a			;368b
 	jr nz,l369ch		;368d
-	bit 1,(ix+004h)		;368f
+	bit 1,(ix+4)		;368f
 	ret z			;3693
 	call sub_028dh		;3694
 	jr z,l3689h		;3697
 	jp 04203h		;3699
 l369ch:
-	ld a,(ix+003h)		;369c
+	ld a,(ix+3)		;369c
 	or a			;369f
 	jr nz,l36a3h		;36a0
 	ld a,c			;36a2
 l36a3h:
 	out (0ebh),a		;36a3
-	ld (ix+003h),000h	;36a5
+	ld (ix+3),000h	;36a5
 	ret			;36a9
 
 ;
@@ -10791,26 +10882,27 @@ INITR:
 	nop
 	jp 	JT_INTHAND	;4012 - RST 38H (Interrupt)
 ;
-; Keyboard DCB
+; ----------------------------------------------------
+; Default Device Control Blocks
+; ----------------------------------------------------
+;
+KEYDCB:
+;
+; Keyoard DCB
+	.DB	$01		; Recognition Code. Keyboard is 01.
+	.DW	JT_KEYINPUT	; Driver (via Jump Table)
+	.DB	$00, $01, $07, $00, $00
+; Video DCB
+	.DB	$07		; Recognition Code. Video is 07.
+	.DW	DSPDRV		; Driver
+	.DB	$00, $3C, $00, $B0, $00
+; Printer DCB
+	.DB	$06		; Recognition Code. Printer is 06.
+	.DW	PRTDRV 		; Driver
+	.DB	$43, $01, $00, $FF, $52
+
 ; TODO THE FOLLOWING IS NOT CODE and needs to be fixed
-l36bfh:
-	ld bc,3024h		;36bf
-	nop			;36c2
-	ld bc,0007h		;36c3
-	nop			;36c6
-	rlca			;36c7
-	ld (hl),e		;36c8
-	inc b			;36c9
-	nop			;36ca
-	inc a			;36cb
-	nop			;36cc
-	or b			;36cd
-	nop			;36ce
-	ld b,0c2h		;36cf
-	inc bc			;36d1
-	ld b,e			;36d2
-	ld bc,0ff00h		;36d3
-	ld d,d			;36d6
+
 	jp 05000h		;36d7
 	rst 0			;36da
 	nop			;36db
@@ -10825,10 +10917,10 @@ l36bfh:
 	xor d			;36e4
 	xor d			;36e5
 	xor d			;36e6
-	jp l35fah		;36e7
-	jp l35fah		;36ea
-	jp l35fah		;36ed
-	jp l3529h		;36f0
+	jp $35fa		;36e7
+	jp $35fa		;36ea
+	jp $35fa		;36ed
+	jp $3529		;36f0
 	rst 0			;36f3
 	nop			;36f4
 ;
@@ -10856,16 +10948,15 @@ SERDCB:
 	rst 38h			;3714
 	nop			;3715
 	nop			;3716
-	jp l022eh		;3717
-	jp l35fah		;371a
-	jp l35fah		;371d
+	jp $022e		;3717
+	jp $35fa		;371a
+	jp $35fa		;371d
 	ld b,c			;3720
 	ld (l3203h),a		;3721
-	jr z,l3729h		;3724
+	jr z,$3729		;3724
 	inc a			;3726
 	inc b			;3727
 	nop			;3728
-l3729h:
 	nop			;3729
 	ld e,000h		;372a
 	nop			;372c
@@ -10886,113 +10977,113 @@ l3729h:
 ; IO RE-ROUTER
 ;
 l3739h:
-	ld a,(ix+003h)		;3739
-	cp 052h			;373c
-	jr nz,l3743h		;373e
-	ld a,(ix+004h)		;3740
+	ld 	a,(ix+3)	;3739
+	cp 	052h		;373c
+	jr 	nz,l3743h	;373e
+	ld 	a,(ix+4)	;3740
 l3743h:
-	call sub_375eh		;3743
-	ret nz			;3746
-	push hl			;3747
-	ld a,(ix+005h)		;3748
-	cp 052h			;374b
-	jr nz,l3752h		;374d
-	ld a,(ix+006h)		;374f
+	call 	sub_375eh	;3743
+	ret 	nz		;3746
+	push 	hl		;3747
+	ld 	a,(ix+5)	;3748
+	cp 	052h		;374b
+	jr 	nz,l3752h	;374d
+	ld 	a,(ix+6)	;374f
 l3752h:
-	call sub_375eh		;3752
-	ex de,hl		;3755
-	pop hl			;3756
-	ret nz			;3757
-	ld bc,00003h		;3758
+	call 	sub_375eh	;3752
+	ex 	de,hl		;3755
+	pop 	hl		;3756
+	ret 	nz		;3757
+	ld 	bc,00003h	;3758
 	ldir			;375b
 	ret			;375d
 sub_375eh:
-	ld hl,l376ch		;375e
-	ld bc,0000fh		;3761
+	ld 	hl,l376ch	;375e
+	ld 	bc,0000fh	;3761
 	cpir			;3764
-	ret nz			;3766
-	ld a,(hl)		;3767
-	inc hl			;3768
-	ld h,(hl)		;3769
-	ld l,a			;376a
+	ret 	nz		;3766
+	ld 	a,(hl)		;3767
+	inc 	hl		;3768
+	ld 	h,(hl)		;3769
+	ld 	l,a		;376a
 	ret			;376b
 l376ch:
-	ld c,e			;376c
-	dec d			;376d
-	ld b,b			;376e
-	ld b,h			;376f
-	dec e			;3770
-	ld b,b			;3771
-	ld d,b			;3772
-	dec h			;3773
-	ld b,b			;3774
-	ld c,c			;3775
-	push hl			;3776
-	ld b,c			;3777
-	ld c,a			;3778
-	out (c),b		;3779
+	ld 	c,e		;376c
+	dec 	d		;376d
+	ld 	b,b		;376e
+	ld 	b,h		;376f
+	dec 	e		;3770
+	ld 	b,b		;3771
+	ld 	d,b		;3772
+	dec 	h		;3773
+	ld 	b,b		;3774
+	ld 	c,c		;3775
+	push 	hl		;3776
+	ld 	b,c		;3777
+	ld 	c,a		;3778
+	out 	(c),b		;3779
 l377bh:
-	cp 022h			;377b
-	jr nz,l3789h		;377d
-	ld a,(0409fh)		;377f
-	xor 001h		;3782
-	ld (0409fh),a		;3784
-	ld a,022h		;3787
+	cp 	022h		;377b
+	jr 	nz,l3789h	;377d
+	ld 	a,(0409fh)	;377f
+	xor 	001h		;3782
+	ld 	(0409fh),a	;3784
+	ld 	a,022h		;3787
 l3789h:
-	cp 03ah			;3789
-	jp nz,l06aah		;378b
-	ld a,(0409fh)		;378e
+	cp 	03ah		;3789
+	jp 	nz,l06aah	;378b
+	ld 	a,(0409fh)	;378e
 	rra			;3791
-	jp c,l06a8h		;3792
+	jp 	c,l06a8h	;3792
 	rla			;3795
-	jp l06a3h		;3796
+	jp 	l06a3h		;3796
 ;
 ; ============================
 ; BASIC TIMES (DATE$+" "+TIME$)
 ;
 l3799h:
-	rst 10h			;3799
-	push hl			;379a
-	ld a,011h		;379b
+	rst 	10h		;3799 - todo fix this - macro
+	push 	hl		;379a
+	ld 	a,011h		;379b
 	call 	STRINI		;379d
-	ld hl,(040d4h)		;37a0
-	call l35bbh		;37a3
-	ld (hl),020h		;37a6
-	inc hl			;37a8
-	call l35a0h		;37a9
-	jp PUTNEW		;37ac
+	ld 	hl,(040d4h)	;37a0 - todo memory address
+	call 	l35bbh		;37a3
+	ld 	(hl),020h	;37a6
+	inc 	hl		;37a8
+	call 	l35a0h		;37a9
+	jp 	PUTNEW		;37ac
 l37afh:
-	call l37b5h		;37af
-	jp INIT2		;37b2 - JUMP to 0075H to go to non-disk initialization
+	call 	l37b5h		;37af
+	jp 	INIT2		;37b2 - JUMP to 0075H to go to non-disk initialization
 ;
 ; ===============================
 ; SET CASSETTE BAUD RATE ($SETCAS)
 ;
 l37b5h:
 	ei			;37b5
-	call sub_37d7h		;37b6
-	ld hl,CASMSG		;37b9
-	call l021bh		;37bc
-	call _KEY		;37bf
-	cp 00dh			;37c2
-	jr z,l37d4h		;37c4
-	push af			;37c6
-	call _DSP		;37c7
-	pop af			;37ca
-	cp 048h			;37cb
-	jr z,l37d4h		;37cd
-	cp 04ch			;37cf
-	jr nz,l37b5h		;37d1
-	xor a			;37d3
+	call 	sub_37d7h	;37b6
+	ld 	hl,CASMSG	;37b9
+	call 	VDLINE		;37bc
+	call 	_KEY		;37bf
+	cp 	00dh		;37c2
+	jr 	z,l37d4h	;37c4
+	push 	af		;37c6
+	call 	_DSP		;37c7
+	pop 	af		;37ca
+	cp 	048h		;37cb
+	jr 	z,l37d4h	;37cd
+	cp 	04ch		;37cf
+	jr 	nz,l37b5h	;37d1
+	xor 	a		;37d3
 l37d4h:
-	ld (04211h),a		;37d4
+	ld 	(04211h),a	;37d4
 sub_37d7h:
-	ld a,00dh		;37d7
-	jp _DSP			;37d9
+	ld 	a,00dh		;37d7
+	jp 	_DSP		;37d9
 l37dch:
-	ld hl,JT_DATTIM		;37dc - JP Vector for TIME$ routine
-	ld (04177h),hl		;37df - 4176H is the TIME$ vector, so that jump needs to be 3030H
-	jp l022eh		;37e2
+	ld 	hl,JT_DATTIM	;37dc - JP Vector for TIME$ routine
+	ld 	(04177h),hl	;37df - 4176H is the TIME$ vector, so that jump needs to be 3030H
+	jp 	READYE		;37e2
 ;
 	.DB	$AA		;37e5 - UNUSED
 	.DB	$AA		;37e6 - UNUSED
@@ -11014,8 +11105,8 @@ l37eah:
 COPYWR:
 	CALL 	021BH		;37eb
 	ld 	hl,COPYMSG	;37ee - NOTE: 0202H points to the message '(C) "80 Tandy"'.
-	call l021bh		;37f1
-	jr l37dch		;37f4
+	call 	VDLINE		;37f1
+	jr 	l37dch		;37f4
 ;
 ; ------------------------------------
 ; Cass ? Message
@@ -11023,7 +11114,7 @@ COPYWR:
 CASMSG:
 	.DB	CURON		; cursor on
 	.DB	"Cass? "
-	.DB	$03		; end of text
+	.DB	ETX		; end of text
 	.DB	$AA, $AA	; UNUSED
 ;
 ; ----------------------------------------------------------------------
@@ -11216,6 +11307,11 @@ SYSOUT:	.EQU	DEXT+60		; (02B2) During SYSTEM command operation (41E2)
 SERINP:	.EQU	RAM+$1E5	; Serial RS-232 Driver Input DCB
 SEROUT:	.EQU	RAM+$1ED	; Serial RS-232 Driver Output DCB
 SERINI: .EQU	RAM+$1F5	; Serial RS-232 Initialization DCB
+;
+TAPEWR: .EQU	RAM+$20C	; TAPE WRITE VECTOR, either Fast of Slow tape routines
+TAPERD: .EQU	RAM+$20E	; TAPE READ  VECTOR, either Fast of Slow tape routines
+SHADEC: .EQU	RAM+$210	; CURRENT PORT 0ECH SHADOW OUTPUT BITS
+IOROUT: .EQU	RAM+$21D	; IO ROUTER DCB
 ;
 SYSSTK:	.EQU	RAM+$288	; Stack address usd by SYSTEM command
 SMPSTK:	.EQU	RAM+$2F8	; Stack address Initially Used
