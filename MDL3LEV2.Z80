@@ -627,7 +627,6 @@ USEDEF:	dec	hl		;00e7 - minus 1
 ;
 MEMMSG:	.DB	"Memory Size",0		   		; Memory Size Message
 HDGMSG:	.DB	"Radio Shack Model III Basic",$0D	; RS L2 Basic Message V1.3
-HDGMSG:	.DB	"Radio Shack Model III Basic",$0D	; RS L2 Basic Message V1.3
 ;
 ; Could Easly get 11 - 13 Bytes Back by shortening the above messages
 ; LD BC,$1A18 - 3 bytes
