@@ -1,7 +1,7 @@
 
-# TRS-80
+# TRS-80 Model 1
 
-## Model 1 Level 2 Source Code
+## Level 2 Source Code
 
 Source Code File : [MDL1LEV2.Z80](./MDL1LEV2.Z80)
 

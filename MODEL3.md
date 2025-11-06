@@ -1,5 +1,5 @@
 
-# TRS-80
+# TRS-80 Model III
 
 ## Model III Level 2 Source Code
 
