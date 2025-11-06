@@ -1,7 +1,7 @@
 
 # TRS-80 Model III
 
-## Model III Level 2 Source Code
+## Level 2 Source Code
 
 Source Code File : [MDL3LEV2.Z80](./MDL3LEV2.Z80)
 
