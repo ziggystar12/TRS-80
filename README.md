@@ -77,12 +77,13 @@ please ensure you test that the build works using Telemark Assembler.
 ### References
 
 Following References
-* [http://www.trs-80.org/model-1-level-2-basic-rom-versions/] - different ROM Versions defined
-* [https://www.classic-computers.org.nz/system-80/hardware_rom.htm] - Dick Smith System 80 (EACA) Rom Differences
-* [https://www.trs-80.com/wordpress/roms/] - Very good source code documentation
+* [Ira Goldklang's TRS-80 Site - ROM Main Page](https://www.trs-80.com/wordpress/roms/) - Invaluable documentation
+* [Tribute to the Dick Smith System 80 - Model 1 ROM differences](https://www.classic-computers.org.nz/system-80/hardware_rom.htm)
 * [https://gitlab.com/retroabandon/trs80i34-re] - The disassembly I based this work on.
 * [https://rosettacode.org/wiki/Category:Z80_Assembly#Inlined_bytecode] - Better Else Z80 optimisation
 * [https://wikiti.brandonw.net/index.php?title=Z80_Optimization#Better_else] - Better Else optimisation
 * [https://www.cpcalive.com/docs/TASMMAN.HTM] - Telemark Assembler
+* [TRS-80 ROM Errors - Vernon Hester](https://www.trs-80.com/sub-rom-bugs.htm)
+* MOD III ROM COMMENTED - 1981 - Soft Sector Marketing
 * Microsoft BASIC Decoded & Other Mysteries - James Farvour
 * TRS-80 Rom Routines Documented (The Alternate Source) - Jack Decker

@@ -1,6 +1,10 @@
 ;
 ; ======================================================================
 ;        TRS-80 Model III Level II BASIC ROM - (Disassembled)
+;
+;     Source Code Created By : kiwisincebirth - 2025
+;     [https://github.com/kiwisincebirth/TRS-80]
+;
 ; ======================================================================
 ;     NOTE: this code has been formatted with 8 character tabs
 ; ----------------------------------------------------------------------
@@ -36,7 +40,7 @@
 ;     INFORMATION
 ; ----------------------------------------------------------------------
 ;
-; Code was based off the Model 1 Disassembly
+; Code was based off the Model 1 source code, provided in the GIT Repo
 ;
 ; This source code has been compiled with Telemark Assembler, and tested
 ; using a DIFF tool to ensure binary compatibility of the generated output.
@@ -50,7 +54,8 @@
 ;   • Telemark Assembler - [https://www.cpcalive.com/docs/TASMMAN.HTM]
 ;
 ; ======================================================================
-;      BUGS
+;      BUGS - "TRS-80 ROM Errors - Vernon Hester"
+;      https://www.trs-80.com/sub-rom-bugs.htm
 ; ----------------------------------------------------------------------
 ;
 ; Bug 28 - Stack Pointer Initialisation
@@ -80,6 +85,14 @@
 ; Rumor has it that this is a malicious destruction of the
 ; "printer ready" function was used to hide the name "RON"
 ; See 044BH which has the correct implementation
+;
+; ======================================================================
+;      REFERENCES
+; ----------------------------------------------------------------------
+;   • Git Hub Repository - [https://github.com/kiwisincebirth/TRS-80]
+;   • TRS-80 ROM Errors - Vernon Hester - [https://www.trs-80.com/sub-rom-bugs.htm]
+;   • Ira Goldlang, TRS-80 ROM Information - [https://www.trs-80.com/wordpress/roms/]
+;   • Telemark Assembler - [https://www.cpcalive.com/docs/TASMMAN.HTM]
 ;
 ; ======================================================================
 ;
@@ -267,6 +280,8 @@ rst00:	di			;0000
 	xor	a		;0001
 	JP 	JT_BOOTS	;0002 - Go to the Boostrap/Initialization routine at 3015H
 ;
+; The BDOS (Basic Disk Operating System) entry point address in most CP/M systems
+; Having this here may be coincidental, and may be UNUSED
 	jp	mRST1		;0005
 ;
 ; ======================================================================
@@ -435,9 +450,9 @@ _PRT:	ld	de,mPDCB	;003b
 ; ----------------------------------------------------------------------
 KBLINE:
 _KEYIN:	jp	KEYIN		;0040
-	ret			;0043
-	nop			;0044
-	nop			;0045
+	ret			;0043 - UNUSED
+	nop			;0044 - UNUSED
+	nop			;0045 - UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; 0046H-0048H – DRIVER ENTRY ROUTINE – Part 2 – "CIOJ"
@@ -476,7 +491,7 @@ RSTX:
 RSINIT:
 	ld 	de,SERINI	;005a - 41F5 serial Init DCB
 	jr 	_PUT		;005d
-	nop			;005f
+	nop			;005f - UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; 0060 - "$DELAY" - This is a general purpose routine to be used whenever you want to pause before continuing with a program.
@@ -495,7 +510,7 @@ DELAY:
 ; is pressed (Non Maskable Interrupt address)
 ; The RESET button generates an NMI, not an actual reset.
 ; ----------------------------------------------------------------------
-NMI:	jp 	NMIENTRY		;0066
+NMI:	jp 	NMIENTRY	;0066
 ;
 ; ------------------------------------------
 ; 0069 - "$INITIO" - A call to $INITIO restores all I/O drivers to their initial default conditions, including I/O routes. No entry conditions. All registers are altered.
@@ -509,7 +524,7 @@ INITIO:
 ROUTE:
 	ld 	de,IOROUT	;006c - 421D IO Router DCB
 	jr 	_PUT		;006f - invoke the Driver
-	nop			;0071 - NOT USED
+	nop			;0071 - UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; Alternative entry point to BASIC. See 06CCH or 1A19 for more details
@@ -567,7 +582,7 @@ LOPRTS:	ld	(hl),OPRET	;00a1 - Store RET OpCode
 	ld	(hl),b		;00ab
 	ld	sp,SMPSTK	;00ac - STACK pointer to 41F8H, temporary until call STKINI
 	call	STKINI		;00af - Go initialize the Level II BASIC variables and pointers
-	nop			;00b2 - On Model 1 was call to CLS
+	nop			;00b2 - UNUSED - On Model 1 was call to CLS
 	nop
 	nop
 ;
@@ -835,7 +850,8 @@ DELAY2:
 ; -------------------------------------------------------
 COPYMSG:
 	.DB	"(c) '80 Tandy" ;0202 Copyright message storage area.
-	.DB	ENTER, $1E, $3D
+	.DB	ENTER
+	.DB	$1E, $3D	;210 - UNUSED
 ;
 ; -------------------------------------------------------
 ; 0212H - This continues a subroutine and was JUMPed to from 022CH.
@@ -892,11 +908,9 @@ BCASIN:
 ; -------------------------------------------------------
 READYE:
 	ei			;022e
-	jp 	READY		;022f - contine to READY
+	jp 	READY		;022f - continue to READY
 ;
-	ccf			;0232 - NOT USED
-	inc 	a		;0233 - NOT USED
-	ret			;0234 - NOT USED
+	.DB 	$3F, $3C, $C9	;0232 - UNUSED - A hangover from Model 1
 ;
 ; -------------------------------------------------------
 ; 0235-0240 - CASSETTE ROUTINE - Read a Byte from Cassette - "CSIN"
@@ -956,6 +970,7 @@ TAPECALL:
 TAPECALL2:
 	ex 	(sp),hl		;025d - Put HL as the RETURN ADDRESS and restore HL.
 	ret			;025e - return to the Vector
+;
 	pop 	bc		;025f - UNUSED - A hangover from Model 1
 	ret			;0260 - UNUSED - A hangover from Model 1
 ;
@@ -1046,7 +1061,8 @@ CLKOFF:
 	ld 	a,(SHADEC)	;02a1 - 4210H holds the bit mask for port ECH. Port ECH stores miscellaneous controls.
 	res 	0,a		;02a4 - reset the BIT
 	jr 	WRITEC		;02a6 - Write the $EC shadow register
-	ret			;02a8 - NOT USED
+;
+	ret			;02a8 - UNUSED - A hangover from Model 1
 ;
 ; -------------------------------------------------------
 ; 02A9-02B1 - LEVEL II SYSTEM ROUTINE-ENTRY POINT- "GSYSTR"
@@ -10757,7 +10773,7 @@ hd_boot2:
 	ld	hl,ROM_LOAD	; Address $5000 to load bootstrap
 	ld	bc,READROM	; B=0 C=Read IO Address
 	jp	hd_boot3	; Continue Latter
-	nop			; NOT USED
+	nop			; UNUSED
 #ELSE
 	call 	GETVERSION	;338e - Hard Coded to 1 In this Code Base. Model 4=0
 	jr 	nz,KEYENTRY	;3391 - Jump Forward for Model 3, Model 3
@@ -10847,7 +10863,7 @@ KEYPRESS1:
 hd_boot3:
 	inir			; Read 256 Bytes from FreHD into RAM
 	jp	ROM_LOAD	; Jump to the FreHD BootLoader
-	.DB	0, 0		; NOT USED
+	.DB	0, 0		; UNUSED
 frehd6:	ld   a,(kbdmatrix+$80)
 #ELSE
 	jr 	c,KEYPRESS2	;3412
@@ -11617,6 +11633,7 @@ TIMEREADY:
 ;
 ; ----------------------------------------------------------------------
 ; Shadow Bytes for Printer Status PORT
+; These bytes are not accessible, address decoder directs to Print Status
 ; ----------------------------------------------------------------------
 	.DB	$FF, $FF	;37E8 - 37E9 - UNUSED ( !! Unusable !! )
 ;

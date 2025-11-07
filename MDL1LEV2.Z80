@@ -1,10 +1,13 @@
 ;
 ; ======================================================================
 ;        TRS-80 Model I Level II BASIC ROM - (Disassembled)
+;
+;     Source Code Created By : kiwisincebirth - 2025
+;     [https://github.com/kiwisincebirth/TRS-80]
+;
 ; ======================================================================
 ;     NOTE: this code has been formatted with 8 character tabs
 ; ----------------------------------------------------------------------
-;
 ; Rom Version Definition
 ; #DEFINE VER13   ; Set by Default if VER12 is not defined, dont uncomment
 ; #DEFINE VER12	  ; Uncomment for V1.2, Leave Commented for V1.3
@@ -53,7 +56,7 @@
 ; ======================================================================
 ;      REFERENCES
 ; ----------------------------------------------------------------------
-;
+;   • Git Hub Repository - [https://github.com/kiwisincebirth/TRS-80]
 ;   • Ira Goldlang, TRS-80 ROM Information - [https://www.trs-80.com/wordpress/roms/]
 ;   • Model I Level II BASIC ROM Versions - [http://www.trs-80.org/model-1-level-2-basic-rom-versions/]
 ;   • Telemark Assembler - [https://www.cpcalive.com/docs/TASMMAN.HTM]
@@ -257,6 +260,8 @@ rst00:	di			;0000
 	xor	a		;0001
 	jp	INIT		;0002
 ;
+; The BDOS (Basic Disk Operating System) entry point address in most CP/M systems
+; Having this here may be coincidental, and may be UNUSED
 	jp	mRST1		;0005
 ;
 ; ======================================================================
@@ -425,9 +430,9 @@ _PRT:	ld	de,mPDCB	;003b
 ; ----------------------------------------------------------------------
 KBLINE:
 _KEYIN:	jp	KEYIN		;0040
-	ret			;0043
-	nop			;0044
-	nop			;0045
+	ret			;0043 - UNUSED
+	nop			;0044 - UNUSED
+	nop			;0045 - UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; 0046H-0048H – DRIVER ENTRY ROUTINE – Part 2 – "CIOJ"
