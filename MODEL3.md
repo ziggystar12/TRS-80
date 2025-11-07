@@ -32,6 +32,7 @@ There are several optional features.
 * `#DEFINE FREHDBT` - Enables the FreHD auto boot ROM feature, ie load fre HD at start
 
 Bug Fixes can be applied
+* `#DEFINE BUGFIX27` - Fix Bug 27 - 06CCH - Basic Entry Point
 * `#DEFINE BUGFIX28` - Fix Bug 28 - 034BH - Stack Initialisation Problem
 * `#DEFINE BUGFIX30` - Fix Bug 30 - 034BH - 32 char Mode, Incompatible Model 1 code
 * `#DEFINE BUGFIX40` - Fix Bug 40 - 05D1H - Broken "RON" Printer Status Routine
@@ -41,5 +42,18 @@ Some additional defines, which are build options rather than features
   images for used in large 16K paged rom
 * `#DEFINE DONTEND` - Disable `.END` directive if `#INCLUDE`ing the source inside another file.
 
+## Bug Fixes
 
+### BugFix 27
 
+This actually Fixes a number of reported issues (27, 29, 31)
+which all relate to the 06CCh BASIC entry point being incorrectly 
+removed from the Model III. It may also improve compatibility 
+for third party software that expects this entry point
+
+To Implement this the Startup messages were truncated to:
+
+```
+Mem Size?
+R/S M3 Basic
+```

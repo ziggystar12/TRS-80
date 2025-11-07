@@ -19,15 +19,10 @@
 ; #DEFINE VIDEO50 ; Uncomment to Enable 50Hz Video Support (RTC)
 ;
 ; === Rom Bug Fixes ===
+; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry 06CCh
 ; #DEFINE BUGFIX28 ; Uncomment to Fix Bug 28 - 02B5H - Stack Init
 ; #DEFINE BUGFIX30 ; Uncomment to Fix Bug 30 - 034BH - 32 Char Mode
 ; #DEFINE BUGFIX40 ; Uncomment to Fix Bug 40 - 05D1H - Printer Status
-;
-; = Rom Bugs TO FIX =
-; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry
-; #DEFINE BUGFIX29 ; Uncomment to Fix Bug 29 - 02C3H - Basic Entry
-; #DEFINE BUGFIX31 ; Uncomment to Fix Bug 31 - Issues with Stack
-; (currently these are not fixed - defining them has no affect)
 ;
 ; Rom Additional Features
 ; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup.
@@ -58,6 +53,15 @@
 ;      https://www.trs-80.com/sub-rom-bugs.htm
 ; ----------------------------------------------------------------------
 ;
+; Bug 27 - 06CC Basic Entry Point - Also Fixes Error's 29, 31
+;
+; Location 0072H: Instruction here is JP 06CCH. Location 06CCH on the
+; Model I contained the correct entry to BASIC from a machine language
+; routine that moved the stack pointer. On the Model III, 0072H still has
+; the instruction JP 06CCH; however, that is in the middle of the Model III's
+; modified list routine.
+; This is a bona fide screw up that was never fixed.
+
 ; Bug 28 - Stack Pointer Initialisation
 ;
 ; Instruction at 02B5H is LD SP,4288H. The instruction here should
@@ -529,8 +533,7 @@ ROUTE:
 ; ----------------------------------------------------------------------
 ; Alternative entry point to BASIC. See 06CCH or 1A19 for more details
 ; ----------------------------------------------------------------------
-	jp	$06CC		;0072 - jump to Level II BASIC READY routine
-				; NOTE THIS IS A BUG SEE ERROR 27 !!!!!
+	jp	RESETR		;0072 - jump to Level II BASIC READY routine
 ;
 ; ----------------------------------------------------------------------
 ; 0075H-0104H – INITIALIZATION ROUTINE – "INIT2"
@@ -640,13 +643,31 @@ USEDEF:	dec	hl		;00e7 - minus 1
 ;   Note: Starts at 0113H if FreHD has been defined
 ; ----------------------------------------------------------------------
 ;
-MEMMSG:	.DB	"Memory Size",0		   		; Memory Size Message
-HDGMSG:	.DB	"Radio Shack Model III Basic",$0D	; RS L2 Basic Message V1.3
+#IFDEF BUGFIX27
 ;
-; Could Easly get 11 - 13 Bytes Back by shortening the above messages
-; LD BC,$1A18 - 3 bytes
-; JP 19AEH - 3 bytes
-; Jumped to from the required locations, including 06CC
+; Messageas compacted
+MEMMSG:	.DB	"Mem Size",0		   		; Memory Size Message
+HDGMSG:	.DB	"R/S M3 Basic",$0D			; RS L2 Basic
+	.DB	0,0					; UNUSED PADDING
+;
+RESETR:				; The 06CC BASIC Entry Point
+	ld	bc,STPRDY	;06cc - Address of
+	jp	ERESET		;06cf - Jumps to 19AE
+;
+UNTOKEN5A:			; Original Code MOVED here
+	cp 	'E'		;06c9 - Test for an E
+	ret 	nz		;06cb - no then Skip
+	dec 	bc		;06cc
+	ld 	a,(bc)		;06cd - get 1 character back
+	cp 	'R'		;06ce - Test for an R
+	JP	UNTOKEN5B	; JMP back to Untokenize
+;
+#ELSE
+;
+MEMMSG:	.DB	"Memory Size",0		   		; Memory Size Message
+HDGMSG:	.DB	"Radio Shack Model III Basic",$0D	; RS L2 Basic
+;
+#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ; 012DH – ?L3 ERROR ENTRY POINT – "L3ERR"
@@ -1074,13 +1095,14 @@ GSYSTR:	call	CADRIN		;02a9
 ; ----------------------------------------------------------------------
 ; 02B2 – LEVEL II BASIC SYSTEM ROUTINE – “SYSTEM”
 ; ----------------------------------------------------------------------
-SYSTEM:	call	SYSOUT		;02b2
-	ld	sp,SYSSTK	;02b5
-	call	CRDO		;02b8
+SYSTEM:	call	SYSOUT		;02b2 - Call the DOS exit for system command at 41E2H.
+	ld	sp,SYSSTK	;02b5 - Set the STACK pointer to the assumed load address.
+	; This location passes control to the routine used by the BASIC command SYSTEM.
+	call	CRDO		;02b8 - display a carriage return on the video display
 	ld	a,'*'		;02bb
-	call	OUTDO		;02bd
-	call	QINLIN		;02c0
-	jp	c,$06CC		;02c3 - THIS IS A BUG See ERROR 29
+	call	OUTDO		;02bd - Display a * character on the video display.
+	call	QINLIN		;02c0 - get the input from the keyboard
+	jp	c,RESETR	;02c3 - If BREAK key, JMP 06CC entry. BUG 29
 	GETCHR			;02c6 - rst 10h
 	jp	z,SNERR		;02c7
 	cp	'/'		;02ca
@@ -2007,20 +2029,24 @@ UNTOKEN4:
 	ret 	nz		;06c6 - no then Skip
 	dec 	bc		;06c7
 	ld 	a,(bc)		;06c8 - get 1 character back
+
+
+#IFDEF BUGFIX27
+	JP	UNTOKEN5A
+	JP	RESETR		; The 06CC BASIC Entry Point is FIXED
+	.DB	0		; we require a spare byte to match original code
+UNTOKEN5B:
+#ELSE
 	cp 	'E'		;06c9 - Test for an E
 	ret 	nz		;06cb - no then Skip
-;
-; !!!!!!! The 06CC BASIC Entry Point (Model I) NO Longer Works.
-;
+RESETR:				; The 06CC BASIC Entry Point is BROKEN!!!
 	dec 	bc		;06cc
 	ld 	a,(bc)		;06cd - get 1 character back
 	cp 	'R'		;06ce - Test for an R
+#ENDIF
 	ret 	nz		;06d0 - no then Skip
 	dec 	bc		;06d1
-; !!! down to here
 	ld 	a,(bc)		;06d2 - get 1 character back
-;
-;
 	cp 	':'		;06d3 - Test for a : colon
 	ret 	nz		;06d5 - no then Skip
 ;
