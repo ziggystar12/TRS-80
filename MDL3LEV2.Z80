@@ -19,7 +19,7 @@
 ; #DEFINE VIDEO50 ; Uncomment to Enable 50Hz Video Support (RTC)
 ;
 ; === Rom Bug Fixes ===
-#DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry 06CCh
+; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry 06CCh
 ; #DEFINE BUGFIX28 ; Uncomment to Fix Bug 28 - 02B5H - Stack Init
 ; #DEFINE BUGFIX30 ; Uncomment to Fix Bug 30 - 034BH - 32 Char Mode
 ; #DEFINE BUGFIX40 ; Uncomment to Fix Bug 40 - 05D1H - Printer Status
@@ -233,8 +233,10 @@ CLRKEY:	.EQU	$1F	; (CLEAR Key) erase from Cursor to end of frame
 ;
 SPACE:	.EQU 	$20	; A space character
 DQUOTE	.EQU	$22	; A Double Quote ( " )
+SQUOTE	.EQU	$27	; A Single Quote ( ' )
 SEMICO	.EQU	$3B	; Note ';' in code; was breaking some assemblers
 UPARRW	.EQU	$5B	; (UP Arrow) Special Up Arrow ↑ Character in TRS Charset
+BQUOTE	.EQU	$60	; A Back Quote ( ` )
 CURCHR  .EQU	$B0	; (block graphic) _ cursor character
 ;
 ; ======================================================================
@@ -870,7 +872,7 @@ DELAY2:
 COPYMSG:
 	.DB	"(c) '80 Tandy" ;0202 Copyright message storage area.
 	.DB	ENTER
-	.DB	$1E, $3D	;210 - UNUSED
+	.DB	$1E, $3D	;0210 - UNUSED
 ;
 ; -------------------------------------------------------
 ; 0212H - This continues a subroutine and was JUMPed to from 022CH.
@@ -10203,11 +10205,13 @@ NMIENTRY:
 	jp 	SETCAS		;3042 - UNUSED ?
 ;
 ; ----------------------------------------------------------------------
-; 3045 - Keyboard Rows 0-3, Unshifted, No Caps Lock
+; 3045 - Keyboard Rows 0-3, Un-shifted, No Caps Lock
 ; ----------------------------------------------------------------------
 KEYLKUP:
-	.DB	$40
-	.DB	"abcdefghijklmnopqrstuvwxyz"
+	.DB	"@abcdefg"
+	.DB	"hijklmno"
+	.DB	"pqrstuvw"
+	.DB	"xyz"
 ;
 ; ----------------------------------------------------------------------
 ; 3060 - Load A with the Computer version number,
@@ -10219,15 +10223,14 @@ GETVERSION:
 	ret			;3064
 ;
 ; ----------------------------------------------------------------------
-; 3065 - 307C - Keyboard Rows 4-6, Unshifted, No Caps Lock.
+; 3065 - 307C - Keyboard Rows 4-6, Un shifted, No Caps Lock.
 ;
 ; NOTE: The use of this (and following) is dependant on positon
 ; Calculated from the First Table located at $3045 adding $20 byte offsets
 ; ----------------------------------------------------------------------
-	.DB	"0123456789"
-	.DB	":;"
-	.DB	$2C, $2D, $2E, $2F
-	.DB	$0D, $1F, $01, $5B, $0A, $08, $09, $20
+	.DB	"01234567"
+	.DB	"89:;,-./"
+	.DB	ENTER, CLRKEY, BREAK, $5B, LINEF, BACKS, TAB, SPACE
 ;
 ; ----------------------------------------------------------------------
 ; 307D - Set the Keyboard Repeat Delay Count to 1500'
@@ -10241,8 +10244,10 @@ RPTDLY15:
 ; ----------------------------------------------------------------------
 ; 3085 - Keyboard Rows 0-3, shifted, No Caps Lock
 ; ----------------------------------------------------------------------
-	.DB	$60
-	.DB	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	.DB	BQUOTE, "ABCDEFG"
+	.DB	"HIJKLMNO"
+	.DB	"PQRSTUVW"
+	.DB	"XYZ"
 ;
 ; ----------------------------------------------------------------------
 ; 30A0 - Toggle Caps Lock.
@@ -10258,10 +10263,9 @@ CAPSLOCK3:
 ; ----------------------------------------------------------------------
 ; 30A5 - Keyboard Rows 4-6, shifted, No Caps Lock.
 ; ----------------------------------------------------------------------
-	.DB	$00
-	.DB	$21, $22, $23, $24, $25, $26, $27, $28, $29, $2A, $2B
-	.DB	$3C, $3D, $3E, $3F
-	.DB	$0D, $1F, $01, $1B, $1A, $18, $19, $20
+	.DB	$00, "!", DQUOTE, "#$%&", SQUOTE
+	.DB	"()*+<=>?"
+	.DB	ENTER, CLRKEY, BREAK, ARUP, ARDOWN, ARLEFT, ARIGHT, SPACE
 ;
 ; ----------------------------------------------------------------------
 ; 30BD - Toggle Caps Lock.
@@ -10273,10 +10277,12 @@ CAPSLOCK:
 	jr	CAPSLOCK2	;30c3
 ;
 ; ----------------------------------------------------------------------
-; 30C5 - Keyboard Rows 0-3, UNshifted, Caps Lock.
+; 30C5 - Keyboard Rows 0-3, UN shifted, Caps Lock.
 ; ----------------------------------------------------------------------
-	.DB	"@"
-	.DB	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	.DB	"@ABCDEFG"
+	.DB	"HIJKLMNO"
+	.DB	"PQRSTUVW"
+	.DB	"XYZ"
 ;
 ; ----------------------------------------------------------------------
 ; 30E0 - GOSUB to the PRINT SCREEN Routine, Clear A, and RETURN
@@ -10289,10 +10295,9 @@ PRSCN_ALT:
 ; ----------------------------------------------------------------------
 ; 30E5 - Keyboard Rows 4-6, UNshifted, Caps Lock
 ; ----------------------------------------------------------------------
-	.DB	"0123456789"
-	.DB	$3A, $3B
-	.DB	$2C, $2D, $2E, $2F
-	.DB	$0D, $1F, $01, $5B, $0A, $08, $09, $20
+	.DB	"01234567"
+	.DB	"89:;,-./"
+	.DB	ENTER, CLRKEY, BREAK, UPARRW, LINEF, BACKS, TAB, SPACE
 
 ; ----------------------------------------------------------------------
 ; 30FD - Checking for a BREAK key
@@ -10308,8 +10313,10 @@ KEYPRESS8:
 ; ----------------------------------------------------------------------
 ; 3105 - Keyboard Rows 0-3, shifted, Caps Lock
 ; ----------------------------------------------------------------------
-	.DB	$60
-	.DB	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	.DB	$60, "ABCDEFG"
+	.DB	"HIJKLMNO"
+	.DB	"PQRSTUVW"
+	.DB	"XYZ"
 ;
 ; ----------------------------------------------------------------------
 ; 3120 - Go to the next Keyboard row
@@ -10323,10 +10330,9 @@ KEYENTRY3:
 ; ----------------------------------------------------------------------
 ; 3125 - Keyboard Rows 4-6, Shifted, Caps Lock
 ; ----------------------------------------------------------------------
-	.DB	0
-	.DB	$21, $22, $23, $24, $25, $26, $27, $28, $29, $2A, $2B
-	.DB	$3C, $3D, $3E, $3F
-	.DB	$0D, $1F, $01, $1B, $1A, $18, $19, $20
+	.DB	0, "!", DQUOTE, "#$%&", SQUOTE
+	.DB	"()*+<=>?"
+	.DB	ENTER, CLRKEY, BREAK, ARUP, ARDOWN, ARLEFT, ARIGHT, SPACE
 ;
 ; ----------------------------------------------------------------------
 ; 313D - Restore Scanning Variables.
@@ -11027,7 +11033,7 @@ WARMBOOT2:
 	ld 	a,b		;34bb
 	or 	c		;34bc - TEST the BC register pair
 	jr 	nz,WARMBOOT2	;34bd - Not Zero so loop
-	ld 	hl,MSGDISK	;34bf - "Diskette ?" Message
+	ld 	hl,MSGDISK	;34bf - "Diskette?" Message
 	call 	VDLINE		;34c2 - Display It
 	jr 	WARMBOOT	;34c5 - and loop back
 WARMBOOT3:
@@ -11402,8 +11408,13 @@ RS232OUT4:
 	ld 	(ix+3),0	;36a5
 	ret			;36a9
 ;
+; ======================================================================
+; INITIALISATION DEFAULT BLOCKS
+; ======================================================================
+;
 ; ----------------------------------------------------------------------
-; 36AAH - Initial Vectors and DCBs for RAM 4000H-404BH
+; 36AAH - 36BE - Initial Vectors and DCBs for RAM 4000H-404BH
+; Copied into RAM during init code at 3445
 ; ----------------------------------------------------------------------
 ;
 INITR:
@@ -11419,10 +11430,6 @@ INITR:
 	nop
 	nop
 	jp 	JT_INTHAND	;4012 - RST 38H (Interrupt)
-;
-; ======================================================================
-; INITIALISATION DEFAULT BLOCKS
-; ======================================================================
 ;
 ; ----------------------------------------------------------------------
 ; Default Device Control Blocks
@@ -11466,7 +11473,7 @@ KEYDCB:
 	nop
 ; Keyboard Bit Image (7 Byte Buffer). Work area for KB input routine
 	.DB	$AA, $AA, $AA, $AA, $AA, $AA, $AA ; 4036 - 403C
-; Interrup Vectors
+; Interrupt Vectors
 	jp 	INTRETURN	; 403D - Interrupt Vector 3 - JP 35FAH
 	jp 	INTRETURN	; 4040 - Interrupt Vector 6 - JP 35FAH.
 	jp 	INTRETURN	; 4043 - Interrupt Vector 7 - JP 35FAH.
@@ -11476,6 +11483,7 @@ KEYDCB:
 ;
 ; ----------------------------------------------------------------------
 ; 36F5H 36F8 - UNUSED
+; ----------------------------------------------------------------------
 ;
 	.DB	0, 0, 0, 0	;36f5 - 36f8 -- UNUSED
 ;
@@ -11484,7 +11492,6 @@ KEYDCB:
 ; ----------------------------------------------------------------------
 ;
 SERDCB:
-;
 	.DB	$01, $1E, $30, $00, $00, $00, $52, $49	; 41E5 - Serial Input DCB
 	.DB	$02, $21, $30, $00, $00, $00, $52, $4F	; 41ED - Serial Output DCB
 	.DB	$02, $1B, $30, $55, $6C, $FF, $52, $4E	; 41F5 - Serial Init DCB
@@ -11626,7 +11633,7 @@ NONDISK:
 SETCAS:
 	ei			;37b5
 	call 	SETCAS3		;37b6 - Display a CR
-	ld 	hl,CASMSG	;37b9 - Display 'CAss ?' message
+	ld 	hl,CASMSG	;37b9 - Display 'Cass?' message
 	call 	VDLINE		;37bc
 	call 	_KEY		;37bf - Wait for keyboard input
 	cp 	ENTER		;37c2 - Was it an ENTER
