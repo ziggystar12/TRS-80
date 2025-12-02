@@ -5547,35 +5547,35 @@ ERRTAB:
 ;  This code is moved from 18F7-191CH to 4080H-40A5H during non-disk initial setup.
 ; ----------------------------------------------------------------------
 ; Single Point Division Routine (4080 - 408D)
-CONSTR:	sub	$00		;4080 Note Argument is set into working RAM
+CONSTR:	sub	$00		;4080 (FDIVC) - Note Argument is set into working RAM
 	ld	l,a		;4082
 	ld	a,h		;4083
-	sbc	a,$00		;4084 Note Argument is set into worikng RAM
+	sbc	a,$00		;4084 (FDIVB) - Note Argument is set into worikng RAM
 	ld	h,a		;4086
 	ld	a,b		;4087
-	sbc	a,$00		;4088 Note Argument is set into working RAM
+	sbc	a,$00		;4088 (FDIVA) - Note Argument is set into working RAM
 	ld	b,a		;408A
-	ld	a,$00		;408B Note Argument is set into working RAM
+	ld	a,$00		;408B (FDIVG) - Note Argument is set into working RAM
 	ret			;408D
 ;
-	.DW	FCERR		;408E - Vector for to USR(0) routine
-	.DB	$40, $E6, $4D	;4090 - Random number seed
+	.DW	FCERR		;408E (USRTAB) - Vector for to USR(0) routine
+	.DB	$40, $E6, $4D	;4090 (MULTR) - Random number seed
 ;
-	in	a,($00)		;4093 - Input Port Routine. Arg Set in RAM
+	in	a,($00)		;4093 (STAINP) - Input Port Routine. Arg Set in RAM
 	ret			;4095
-	out	($00),a		;4096 - Output port routine. Arg Set in RAM
+	out	($00),a		;4096 (OUTWRD) - Output port routine. Arg Set in RAM
 	ret			;4098
 ;
-	.DB	0		;4099 - Inkey $ Storage
-	.DB	0		;409A - current error flag
-	.DB	0		;409B - current tab position
-	.DB	0		;409C - device output flag
-	.DB	$40		;409D - max chars on video disp line (64)
-	.DB	$30		;409E - Size of print line (48)
+	.DB	0		;4099 (CHARC) - Inkey $ Storage
+	.DB	0		;409A (ERRFLG) - current error flag
+	.DB	0		;409B (LPTPOS) - current tab position
+	.DB	0		;409C (PRTFLG) - device output flag
+	.DB	64		;409D (LINLEN) - max chars on video disp line
+	.DB	48		;409E (CLMLST) - Size of print line
 	.DB	0		;409F - RESERVED
-	.DW	MEMEND+$14C	;40A0 - String Storage Area (434C)
-	.DW	$FFFE		;40A2 - Current BASIC Line Number
-	.DW	MEMEND+$E9	;40A4 - BASIC Program Statement Table Pointer
+	.DW	MEMEND+$14C	;40A0 (STKTOP) - String Storage Area (434C)
+	.DW	$FFFE		;40A2 (CURLIN) - Current BASIC Line Number
+	.DW	MEMEND+$E9	;40A4 (TXTTAB) - BASIC Program Statement Table Pointer
 ;
 CONSTR2:
 ;
