@@ -2075,6 +2075,8 @@ INITR:
 ; ----------------------------------------------------------------------
 ; 0708H-070FH – SINGLE PRECISION ADDITION,
 ;   ACCumulator = (HL) + ACCumulator – “FADDH”
+;   involving a buffer pointed to by the HL Register Pair and ACCumulator 
+;   (i.e., 4121H-4122H).
 ; ----------------------------------------------------------------------
 FADDH:	ld	hl,FHALF	;0708
 FADDS:	call	MOVRM		;070b
@@ -2205,6 +2207,7 @@ ROUNDB:	ld	hl,FAC		;0797
 	jp	MOVFR		;07a5
 ; ----------------------------------------------------------------------
 ; 07A8H-07B6H – SINGLE PRECISION MATH SUPPORT ROUTINE – “ROUNDA”
+;   This is a subroutine within the ROUND round. This will add one to C/D/E.
 ; ----------------------------------------------------------------------
 ROUNDA:	inc	e		;07a8
 	ret	nz		;07a9
@@ -2222,6 +2225,7 @@ OVERR:	ld	e,ERROV		;07b2
 	jp	ERROR		;07b4
 ; ----------------------------------------------------------------------
 ; 07B7H-07C2H SINGLE PRECISION MATH ROUTINE – “FADDA”
+;   This routine adds (HL+2),)(HL+1),(HL+0) to C,D,E. 
 ; ----------------------------------------------------------------------
 FADDA:	ld	a,(hl)		;07b7
 	add	a,e		;07b8
@@ -2237,6 +2241,7 @@ FADDA:	ld	a,(hl)		;07b7
 	ret			;07c2
 ; ----------------------------------------------------------------------
 ; 07C3H-07D6H – SINGLE PRECISION MATH ROUTINE – NEGR
+;   This routine negates the number in C/D/E/B.
 ; ----------------------------------------------------------------------
 NGER:	ld	hl,FACSGN	;07c3
 	ld	a,(hl)		;07c6
@@ -2258,6 +2263,11 @@ NGER:	ld	hl,FACSGN	;07c3
 	ret			;07d6
 ; ----------------------------------------------------------------------
 ; 07D7H-07F7H – SINGLE PRECISION MATH ROUTINE – “SHIFTR”
+;   This routine will shift the number in C/D/E right the number of times
+;   held in Register A. The general idea is to shift right 8 places 
+;   as many times as is possible within the number of times in A, 
+;   and then jump out to shift single bits once you can't shift 8 
+;   at a time anymore. Alters everything except Register H.
 ; ----------------------------------------------------------------------
 SHIFTR:	ld	b,$00		;07d7
 SHIFTR1: sub	$08		;07d9
@@ -2269,6 +2279,8 @@ SHIFTR1: sub	$08		;07d9
 	jr	SHIFTR1		;07e2
 ; ----------------------------------------------------------------------
 ; 07E4 – SINGLE PRECISION MATH ROUTINE – “SHFTR2”
+;   This routine will shift the number in C/D/E right the number 
+;   of times held in Register A, but one byte at a time.
 ; ----------------------------------------------------------------------
 SHFTR2:	add	a,$09		;07e4
 	ld	l,a		;07e6
@@ -2297,10 +2309,10 @@ FONE:	.DB	0, 0, 0, $81	; store a value of 1.0
 ; ----------------------------------------------------------------------
 ; 07FCH-0808H – SINGLE PRECISION CONSTANTS STORAGE LOCATION 2 – “LOGCN2”
 ; ----------------------------------------------------------------------
-LOGCN2:	.DB	3		; count of numbers in table
-	.DB	0AAh, 56h, 19h, 80h; 0.598978650
-	.DB	0F1h, 22h, 76h, 80h; 0.961470632
-	.DB	45h, 0AAh, 38h, 82h; 2.88539129
+LOGCN2:	.DB	3			; count of numbers in table
+	.DB	$AA, $56, $19, $80	; 0.598978650
+	.DB	$F1, $22, $76, $80	; 0.961470632
+	.DB	$45, $AA, $38, $82	; 2.88539129
 ;
 ; ======================================================================
 ; 0809H – LEVEL II BASIC LOG ROUTINE – “FNLOG”
@@ -2558,6 +2570,9 @@ MUL10:	call	MOVRF		;093e
 	jp	OVERR		;0952
 ; ----------------------------------------------------------------------
 ; 0955H-0963H – SINGLE PRECISION MATH ROUTINE – “SIGN”
+;   Puts the SIGN of the ACCumulator into Register A. 
+;   Only Register A is modified by this routine; 
+;   the ACCumulator is left untouched.
 ; ----------------------------------------------------------------------
 SIGN:	ld	a,(FAC)		;0955
 	or	a		;0958
@@ -2574,6 +2589,8 @@ SIGNS:	sbc	a,a		;0960
 	ret			;0963
 ; ----------------------------------------------------------------------
 ; 0964H-0976H – SINGLE PRECISION MATH ROUTINE – “FLOAT”
+;   This routine will take a signed integer held in Register A and 
+;   turn it into a floating point number. All registers are modified.
 ; ----------------------------------------------------------------------
 FLOAT:	ld	b,$88		;0964
 	ld	de,$0000	;0966
@@ -2714,6 +2731,9 @@ UNPACK:	ld	hl,FAC-1	;09df
 	ret			;09f3
 ; ----------------------------------------------------------------------
 ; 09F4H-09FBH – MATH ROUTINE – “VMOVFA”
+;   This routine moves a number of bytes (the number depending 
+;   on the value stored in the VALTYPE) from (HL) to the ACCumulator. 
+;   All Registers except C are affected.
 ; ----------------------------------------------------------------------
 VMOVFA:	ld	hl,ARGLO	;09f4
 VMOVFM:	ld	de,MOVVFM	;09f7
@@ -2865,6 +2885,8 @@ FRCINT:	TSTDAT			;0a7f
 ;
 ; ----------------------------------------------------------------------
 ; 0A8EH – MATH CONVERSION ROUTINE – “CONIS”
+;   This routine will convert a single precision number to an integer. 
+;   Every register is affected.
 ; ----------------------------------------------------------------------
 CONIS:	ld	a,(FAC)		;0a8e
 	cp	$90		;0a91
@@ -2873,6 +2895,11 @@ CONIS:	ld	a,(FAC)		;0a8e
 	ex	de,hl		;0a98
 CONIS1:	pop	de		;0a99
 ; ----------------------------------------------------------------------
+; 0A9AH - LEVEL II BASIC CONVERSION ROUTINE- "MAKINT"
+;   This is the routine that returns the value in the HL Register Pair 
+;   to the BASIC program that called it. In effect it moves the content 
+;   of HL into the ACCumulator so it is ACCumulator = (HL) 
+;   with VALTYPE set accordingly
 ; ----------------------------------------------------------------------
 MAKINT:	ld	(FACLO),hl	;0a9a
 	ld	a,VTINT		;0a9d - Value type INTeger
@@ -3591,9 +3618,8 @@ DMULT5:	ld	hl,FAC-1	;0dcc
 ; 0DD4H-0DDBH – DOUBLE PRECISION CONSTANT STORAGE AREA – “DTEN” and “FTEN”
 ; ----------------------------------------------------------------------
 ;
-DTEN:	.DB	$00, $00, $00, $00; A double precision constant equal to 10 is stored here.
-FTEN:	.DB	$00, $00, $20, $84; A double precision constant equal to 10.0
-; Note: 0DD8 is also a reference point.
+DTEN:	.DB	$00, $00, $00, $00; A double precision constant 10.0
+FTEN:	.DB	$00, $00, $20, $84; A single precision constant 10.0
 ;
 ; ----------------------------------------------------------------------
 ; 0DDCH-0DE4H – DOUBLE PRECISION MATH ROUTINE – “DDIV10”
@@ -4788,6 +4814,7 @@ FODTBL:	.DB	$00, $80, $C6, $A4, $7E, $8D, $03; 1D15
 	.DB	$00, $E1, $F5, $05, $00, $00, $00; 1D7
 	.DB	$80, $96, $98, $00, $00, $00, $00; 1D6
 	.DB	$40, $42, $0F, $00, $00, $00, $00; 1D5
+;
 ; NOTE: The above data does not (exactly) match what is held
 ; in the TRS-80 web site rom disassemblg
 ;
