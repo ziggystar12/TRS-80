@@ -6518,7 +6518,7 @@ RESFIN:	ld	(DATPTR),hl	;1d96
 ISCNTN:	call	ISCHAR		;1d9b
 	or	a		;1d9e
 	ret	z		;1d9f
-CNTCCN:	cp	$60		;1da0
+CNTCCN:	cp	BQUOTE		;1da0 - Is key pressed a SHIFT + @.
 	call	z,INCHR		;1da2
 	ld	(CHARC),a	;1da5
 	dec	a		;1da8
@@ -7121,7 +7121,7 @@ NEWCHR:	dec	hl 		;207C Backspace over previous symbol in code string
 	call	z,CRDO 		;207E If end of string write a Carriage Return
 PRINTC:	jp	z,FINPRT	;2081 If end of string turn off cassette and return
 	or	$20		;2084 Not end of string. Convert possible 40 to 60
- 	cp	$60	 	;2086 Then test for @
+ 	cp	BQUOTE	 	;2086 Compare against a "'", which is actually a @ with OR $20
 	jr	nz,PRINTD	;2088 Jmp if not PRINT @
  	call	GETINT 		;208A Evaluate @ expression, result in DE * PRINT @ routine
 	cp	$04		;208D A = MSB, test for @ value > 1023
@@ -10338,7 +10338,7 @@ KEYPRESS8:
 ; ----------------------------------------------------------------------
 ; 3105 - Keyboard Rows 0-3, shifted, Caps Lock
 ; ----------------------------------------------------------------------
-	.DB	$60, "ABCDEFG"
+	.DB	BQUOTE, "ABCDEFG"
 	.DB	"HIJKLMNO"
 	.DB	"PQRSTUVW"
 	.DB	"XYZ"
@@ -10380,7 +10380,7 @@ PRTABLE:
 	.DB	$40, $61, $62, $63, $64, $65, $66, $67, $68, $69, $6A, $6B, $6C, $6D, $6E, $6F
 	.DB	$70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $7A, $7B, $7C, $7D, $7E, $7F
 	;
-	; NOTE: The above translation only affect $60 -> $40
+	; NOTE: The above translation only affect $60 BQUOTE -> $40 @
 	; NOTE: Could be reimplemented without this table, saving ROM space
 	; NOTE: See 03E9 for the use of this table
 ;
@@ -10420,7 +10420,7 @@ CASSOFF:
 	out 	(maskprt),a	;31c3 - update the maskable Interrupt Register
 	in 	a,(vidcmt)	;31c5 - read Port FF (CASIN) - resets hardware Interrupt Status
 	ld 	a,(SHADEC)	;31c7 - shadow port EC
-	and 	0fdh		;31ca - mask out ZERO bit 1 (cassette Motor)
+	and 	$FD		;31ca - mask out ZERO bit 1 (cassette Motor)
 	call 	WRITEEC2	;31cc - write it back
 	ei			;31cf
 	ret			;31d0
@@ -10736,7 +10736,7 @@ FSTWRV3:
 ; 333E - FAST Output the TIMING MARK to the cassette
 ; ----------------------------------------------------------------------
 FASTTIM:
-	ld 	de,$2b2f	;333e - 2B2F to set the delay for a 0 BIT
+	ld 	de,$2B2F	;333e - 2B2F to set the delay for a 0 BIT
 FASTTIM1:
 	dec 	d		;3341
 	jr 	nz,FASTTIM1	;3342
@@ -11153,8 +11153,8 @@ INT2INVOKE:
 	ld 	(hl),$07	;3541 - reset the counter for next iteration
 	inc 	hl		;3543 - increase HL to 401BH - blink status
 	ld 	a,(hl)		;3544 - get cursor blink status
-	and 	$01		;3545 - update the status
-	xor 	$01		;3547 - inverting he bit
+	and 	1		;3545 - update the status
+	xor 	1		;3547 - inverting he bit
 	ld 	(hl),a		;3549 - store it back.
 	ld 	hl,(CURSOR)	;354a - get the current cursor screen position
 	jr 	z,CURSPACE	;354d - Update with a space
@@ -11204,7 +11204,7 @@ HRTBEAT1:
 	dec 	hl		;357d
 	ld 	a,(hl)		;357e
 	inc 	hl		;357f
-	and 	$03		;3580 - Mask (the year) - to test for a leap year
+	and 	3		;3580 - Mask (the year) - to test for a leap year
 	ret 	z		;3582
 HRTBEAT2:
 	ld 	(hl),1		;3583 - update the Day to 1
@@ -11539,8 +11539,8 @@ SERDCB:
 	.DB	$3C		;4212 (TPBLIN) - Cass Blinker Counter.
 	.DB	$04		;4213 (TPINTV) - Cass Default Interrupt Vector Setting.
 ;
-	.DB	$00		;4214 (VDSCPR) - Video scroll protect: #Lines To Protect (0-7).
-	.DB	$00		;4215 - unused
+	.DB	0		;4214 (VDSCPR) - Video scroll protect: #Lines To Protect (0-7).
+	.DB	0		;4215 - unused
 	;
 	.DB	CLKFREQ	 	;4216 (CLKHRT) - Clock Data: Heartbeat Counter (defined by Clock Freq)
 	.DB	0,0,0,0,0,0	;4217 (CLKHRS) - 421C (CLKMNT) - Clock Data: SS:MM:HH YY/DD/MM
