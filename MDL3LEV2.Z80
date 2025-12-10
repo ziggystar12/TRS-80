@@ -19,7 +19,7 @@
 ; #DEFINE VIDEO50 ; Uncomment to Enable 50Hz Video Support (RTC)
 ;
 ; === Rom Bug Fixes ===
-; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry 06CCh
+; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27 - 0072H - Basic Entry 06CCh. Also Fixes 29, 31
 ; #DEFINE BUGFIX28 ; Uncomment to Fix Bug 28 - 02B5H - Stack Init
 ; #DEFINE BUGFIX30 ; Uncomment to Fix Bug 30 - 034BH - 32 Char Mode
 ; #DEFINE BUGFIX40 ; Uncomment to Fix Bug 40 - 05D1H - Printer Status
@@ -10200,8 +10200,11 @@ JT_BOOTS:
 	jp 	BOOTSTP		;3015 - Jump for Bootstrap.
 JT_INTHAND
 	jp 	INTHAND		;3018 - Jump to 35C2H for Maskable Interrupt Handler
+JT_232INI:
 	jp 	RS232INIT	;301b - Jump to 35FBH for RS-232 Initialization.
+JT_232INP:
 	jp 	RS232INP	;301e - Jump to 365AH for RS-232 Input
+JT_232OUT:
 	jp 	RS232OUT	;3021 - Jump to 3680H for RS-232 Output
 JT_KEYINPUT:
 	jp 	KEYINPUT	;3024 - Jump to 338EH for Keyboard Input
@@ -11517,9 +11520,25 @@ KEYDCB:
 ; ----------------------------------------------------------------------
 ;
 SERDCB:
-	.DB	$01, $1E, $30, $00, $00, $00, $52, $49	;41E5 (SERINP) - Serial Input DCB
-	.DB	$02, $21, $30, $00, $00, $00, $52, $4F	;41ED (SEROUT) - Serial Output DCB
-	.DB	$02, $1B, $30, $55, $6C, $FF, $52, $4E	;41F5 (SERINI) - Serial Init DCB
+	; 41E5 (SERINP) - Serial Input DCB
+	.DB	$01		; 41E5 Recognition Code. Designate used for Input.
+	.DW	JT_232INP	; 41E6 RS-232 INPUT Driver Address (301EH)
+	.DB	$00, $00, $00	; 41E8 Working Storage
+	.DB	"RI"		; 41EB DCB ASCII Identifier Value of "RI".
+;
+	; 41ED (SEROUT) - Serial Output DCB
+	.DB	$02		; 41ED Recognition Code. Designate used for Output.
+	.DW	JT_232OUT	; 41EE RS-232 OUTPUT Driver Address (3021H)
+	.DB	$00, $00, $00	; 41F0 Working Storage
+	.DB	"RO"		; 40F3 DCB ASCII Identifier Value of "RO".
+;
+	; 41F5 (SERINI) - Serial Init DCB
+	.DB	$02		; 41F5 Recognition Code. Designate used for Output.
+	.DW	JT_232INI	; 41F6 RS-232 INIT Driver Address (301BH)
+	.DB	$55		; 41F8 Storage for BAUD RATE, Bits 7-4 for SEND, Bits 3-0 to RECEIVE.
+	.DB	$6C		; 41F9 Storage for Parity, Word Length, and Stop Bits.
+	.DB	$FF		; 41FA Storage for Serial I/O Wait: 0=Do Not Wait, Non-Zero=Wait.
+	.DB	"RN"		; 41FB DCB ASCII Identifier Value of "RN".
 ;
 	.DB	0		;41FD (RPTLSB) - Repeating Key LSB of keyboard buffer pointer
 	.DB	0		;41FE (RPTROW) - Repeating Key Contents of current keyboard "row"
@@ -11969,9 +11988,9 @@ SMPSTK:	.EQU	RAM+$2F8	; Stack address Initially Used
 MEMEND:	.EQU	RAM+$300	; End of Reserved RAM Communications area
 ;
 #IFDEF BUGFIX28
-SYSSTK:	.EQU	MEMEND+$88	; Stack address usd by SYSTEM command
+SYSSTK:	.EQU	MEMEND+$88	; Stack address used by SYSTEM command
 #ELSE
-SYSSTK:	.EQU	RAM+$288	; Stack address usd by SYSTEM command
+SYSSTK:	.EQU	RAM+$288	; Stack address used by SYSTEM command
 #ENDIF
 ;
 BUFINI:	.EQU	RAM+$2E5	; String Buffer initialised with -> colon null comma
