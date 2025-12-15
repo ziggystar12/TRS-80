@@ -21,8 +21,8 @@
 ; Date: 03/19/78 - 03/25/79
 ; CRC-32: 0D8A132E
 ;
-; === Rom Bug Fixes ===
-; #DEFINE BUGFIX5 ; Uncomment to Fix Bug 5 - 08A7H - INT(DoubleValue) rounding
+; Rom Bug Fixes
+; #DEFINE BUGFIX5 ; Uncomment to Fix Error 5 - 08A7H - INT(DoubleValue) rounding
 ;
 ; Rom Additional Features
 ; #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
@@ -57,18 +57,17 @@
 ; using a DIFF tool to ensure binary compatibility of the generated output.
 ;
 ; ======================================================================
-;      BUGS - "TRS-80 ROM Errors - Vernon Hester"
+;      ERRORS - "TRS-80 ROM Errors - Vernon Hester"
 ;      https://www.trs-80.com/sub-rom-bugs.htm
 ; ----------------------------------------------------------------------
 ;
-; Bug 5A - 08A7 - INT(DoubleValue) rounding issue
-
+; Error 5 - 08A7 - INT(DoubleValue) rounding issue
+;
 ; EXPECTATION: INT(value) should produce a result equal to or less than value.
 ; However, if the value is double-precision (by definition), the ROM rounds value
 ; to single-precision first, then performs the INT function. e.g.
 ;
 ; PRINT INT(2.9999999) -> produces 3 instead of 2.
-;
 ;
 ; ======================================================================
 ;      REFERENCES

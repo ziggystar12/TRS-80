@@ -18,12 +18,12 @@
 ; Rom Version Definition
 ; #DEFINE VIDEO50 ; Uncomment to Enable 50Hz Video Support (RTC)
 ;
-; === Rom Bug Fixes ===
-; #DEFINE BUGFIX5  ; Uncomment to Fix Bug 5 - 08A7H - INT(DoubleValue) rounding
-; #DEFINE BUGFIX27 ; Uncomment to Fix Bug 27, 29, 31 - 0072H - Basic Entry 06CCh.
-; #DEFINE BUGFIX28 ; Uncomment to Fix Bug 28 - 02B5H - Stack Init
-; #DEFINE BUGFIX30 ; Uncomment to Fix Bug 30 - 034BH - 32 Char Mode
-; #DEFINE BUGFIX40 ; Uncomment to Fix Bug 40 - 05D1H - Printer Status
+; Rom Bug Fixes
+; #DEFINE BUGFIX5  ; Uncomment to Fix Error 5 - 08A7H - INT(DoubleValue) rounding
+; #DEFINE BUGFIX27 ; Uncomment to Fix Error 27, 29, 31 - 0072H - Basic Entry 06CCh.
+; #DEFINE BUGFIX28 ; Uncomment to Fix Error 28 - 02B5H - Stack Init
+; #DEFINE BUGFIX30 ; Uncomment to Fix Error 30 - 034BH - 32 Char Mode
+; #DEFINE BUGFIX40 ; Uncomment to Fix Error 40 - 05D1H - Printer Status
 ;
 ; Rom Additional Features
 ; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup.
@@ -42,11 +42,11 @@
 ; using a DIFF tool to ensure binary compatibility of the generated output.
 ;
 ; ======================================================================
-;      BUGS - "TRS-80 ROM Errors - Vernon Hester"
+;      ERRORS - "TRS-80 ROM Errors - Vernon Hester"
 ;      https://www.trs-80.com/sub-rom-bugs.htm
 ; ----------------------------------------------------------------------
 ;
-; Bug 5A - 08A7 - INT(DoubleValue) rounding issue
+; Error 5 - 08A7 - INT(DoubleValue) rounding issue
 
 ; EXPECTATION: INT(value) should produce a result equal to or less than value.
 ; However, if the value is double-precision (by definition), the ROM rounds value
@@ -54,7 +54,7 @@
 ;
 ; PRINT INT(2.9999999) -> produces 3 instead of 2.
 ;
-; Bug 27 - 06CC Basic Entry Point - Also Fixes Error's 29, 31
+; Error 27 - 06CC Basic Entry Point - Also Fixes Error's 29, 31
 ;
 ; Location 0072H: Instruction here is JP 06CCH. Location 06CCH on the
 ; Model I contained the correct entry to BASIC from a machine language
@@ -63,12 +63,12 @@
 ; modified list routine.
 ; This is a bona fide screw up that was never fixed.
 
-; Bug 28 - Stack Pointer Initialisation
+; Error 28 - Stack Pointer Initialisation
 ;
 ; Instruction at 02B5H is LD SP,4288H. The instruction here should
 ; be LD SP,4388H because the Model III moved up the start of BASIC by 100H.
 ;
-; Bug 30 - 32 Character Mode
+; Error 30 - 32 Character Mode
 ;
 ; 0348H: Instruction here is LD A,(403DH). 403DH is the code that
 ; is jumped to when port 0E0H has bit 3 reset (IOBUS interrupt).
@@ -84,7 +84,7 @@
 ; TRSDOS 6 to behave the same way! However, with LSDOS 6.3, someone should
 ; have had the guts to correct the code.
 ;
-; Bug 40 - Printer Status Routine
+; Error 40 - Printer Status Routine
 ;
 ; 05D1H: The Printer Status Routine - carried from Model 1 is broken
 ; Rumor has it that this is a malicious destruction of the
@@ -1207,7 +1207,7 @@ DSPPOS:
 	and 	SHADM32		;04ef - check for 32 char mode
 #ELSE
 	; This is a CODE BUG since it only works in Model 1
-	ld	a,($403D)	;0348 - get shadow copy of casette port
+	ld	a,($403D)	;0348 - get shadow copy of cassette port
 	and	$08		;034b - mask of the 32 char mode bit
 #ENDIF
 	ld	a,(CURSOR)	;034d - LSB of the current cursor position

@@ -30,10 +30,6 @@ There are several optional features.
 * `#DEFINE FREHDBT` - Enables the FreHD auto boot feature, i.e. the Auto boot ROM. This requires version 1.3
   ROM as a base, please do NOT define `VER12` as it is not compatible (it will be ignored anyway)
   Consider also enabling NMIHARD to ensure reset (on non-floppy machine) will force a reset.
-* `#DEFINE NO37EXH` - Disable the use of memory mapped hardware at `37Exh`, Floppy disk, Printer, etc.
-  This is useful in machines where these peripherals are not needed (e.g. in a FreHD only system)
-  and allows the use of the 2kb memory `3000h - 37FFh` without interference from the ROM code.
-  This also implies `NMIHARD` since the reset function check based on floppy disk availability
 * `#DEFINE NMIHARD` - Set NMI (reset) as always perform a hard reset. Normally on non-floppy systems NMI performs
   a soft reset returning to the `READY>` prompt with the basic program intact. This is useful in system without
   floppy disk to force a full reset (0066h)
@@ -42,7 +38,7 @@ There are several optional features.
   or where the font rom on the machine has the alternate characters in the 00h 1Fh range (0471h)
 
 Bug Fixes can be applied
-* `#DEFINE BUGFIX5` - Fix Bug 5 - 08A7H - INT(DoubleValue) rounding
+* `#DEFINE BUGFIX5` - Fix Error 5 - 08A7H - INT(DoubleValue) rounding
 
 Some additional defines, which are build options rather than features
 * `#DEFINE SIZE16K` - Will pad the end of the rom with $FF to 16KB size. useful if want to append multiple ROM
@@ -50,6 +46,10 @@ Some additional defines, which are build options rather than features
 * `#DEFINE DONTEND` - Disable `.END` directive if `#INCLUDE`ing the source inside another file.
 
 Experimental - use at your own risk
+* `#DEFINE NO37EXH` - Disable the use of memory mapped hardware at `37Exh`, Floppy disk, Printer, etc.
+  This is useful in machines where these peripherals are not needed (e.g. in a FreHD only system)
+  and allows the use of the 2kb memory `3000h - 37FFh` without interference from the ROM code.
+  This also implies `NMIHARD` since the reset function check based on floppy disk availability
 * `#DEFINE _EMBED` - Strip all HW, and IO routines leaving just BASIC language as standalone code
   and used in L2 Basic for CP/M
 
