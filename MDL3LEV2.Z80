@@ -2686,7 +2686,10 @@ ISIGN:	ld	a,h		;099e
 	ld	a,h		;09a1
 	jr	ICOMPS		;09a2
 ; ----------------------------------------------------------------------
-; 09A4H-09B0H – SINGLE PRECISION MATH ROUTINE – “PUSHF”
+; 09A4H-09B0H – SINGLE PRECISION MATH ROUTINE – “PUSHF” - MOVE
+;   Moves the single precision value in the ACCumulator to the STACK
+;   It is Assumed that ACCumulator contains a single precision value
+;   A, BC and HL are unchanged by this function.
 ; ----------------------------------------------------------------------
 PUSHF:	ex	de,hl		;09a4
 	ld	hl,(FACLO)	;09a5
@@ -2699,9 +2702,15 @@ PUSHF:	ex	de,hl		;09a4
 	ret			;09b0
 ;
 ; ----------------------------------------------------------------------
-; 09B1H-09BEH – SINGLE PRECISION MATH ROUTINE – “MOVFM”
+; 09B1H-09BEH – SINGLE PRECISION MATH ROUTINE – “MOVFM” - MOVE
+;   This routine moves a number from memory (pointed to by HL) into the ACC
+;   All registers except Register A are affected, with HL = HL + 4 on exit.
 ; ----------------------------------------------------------------------
 MOVFM:	call	MOVRM		;09b1
+; ----------------------------------------------------------------------
+; 09B4H – SINGLE PRECISION MATH ROUTINE – “MOVFR” - MOVE
+;   Store the single precision value in BC:DE into ACC. Destroys value in BC:DE.
+; ----------------------------------------------------------------------
 MOVFR:	ex	de,hl		;09b4
 	ld	(FACLO),hl	;09b5
 	ld	h,b		;09b8
@@ -2710,9 +2719,16 @@ MOVFR:	ex	de,hl		;09b4
 	ex	de,hl		;09bd
 	ret			;09be
 ; ----------------------------------------------------------------------
-; 09BFH-09CAH – SINGLE PRECISION MATH ROUTINE – “MOVRF”
+; 09BFH-09CAH – SINGLE PRECISION MATH ROUTINE – “MOVRF” - MOVE
+;   It loads four bytes from ACCumulator (single) into the BC/DE Register Pairs.
+;   Only Register A is unchanged.
 ; ----------------------------------------------------------------------
 MOVRF:	ld	hl,FACLO	;09bf
+; ----------------------------------------------------------------------
+; 09C2H – SINGLE PRECISION MATH ROUTINE – “MOVRM” - MOVE
+;   It loads four byte Single, pointed by HL, into the BC/DE Register Pairs.
+;   Only Register A is unchanged.
+; ----------------------------------------------------------------------
 MOVRM:	ld	e,(hl)		;09c2
 	inc	hl		;09c3
 GETBCD:	ld	d,(hl)		;09c4
@@ -2723,17 +2739,36 @@ GETBCD:	ld	d,(hl)		;09c4
 INXHRT:	inc	hl		;09c9
 	ret			;09ca
 ; ----------------------------------------------------------------------
-; 09CBH-09D1H – SINGLE PRECISION MATH ROUTINE – “MOVMF”
+; 09CBH-09D1H – SINGLE PRECISION MATH ROUTINE – “MOVMF” - MOVE
+;   Copy a Single Precision value from ACCumulator to memory address
+;   pointed to by HL. Modifies all Registers except for C
 ; ----------------------------------------------------------------------
 MOVMF:	ld	de,FACLO	;09cb
+; ----------------------------------------------------------------------
+; 09CEH – SINGLE PRECISION MATH ROUTINE – “MOVE” - MOVE
+;   Copy a Single Precision value from from the location pointed to by DE
+;   into the location pointed to by HL. Modifies all Registers except for C
+; ----------------------------------------------------------------------
 MOVE:	ld	b,VTSNG		;09ce - Move 4 bytes
 	jr	MOVE1		;09d0
 ; ----------------------------------------------------------------------
-; 09D2H-09DEH – MOVE VALUE FROM HL TO THE LOCATION POINTED TO BY DE - “MOVVFM”
+; 09D2H-09DEH – MOVE VALUE FROM DE TO HL - “MOVVFM”
+;   moves the number of bytes specified in the variable type flag
+;   from the address in DE to the address in HL. Uses A, B, DE and HL.
 ; ----------------------------------------------------------------------
 MOVVFM:	ex	de,hl		;09d2
+; ----------------------------------------------------------------------
+; 09D3H – MOVE VALUE FROM HL TO DE - “VMOVE”
+;   moves the number of bytes specified in the variable type flag
+;   from the address in HL to the address in DE. Uses A, B, DE and HL.
+; ----------------------------------------------------------------------
 VMOVE:	ld	a,(VALTYP)	;09d3
 	ld	b,a		;09d6
+; ----------------------------------------------------------------------
+; 09D7H – MOVE VALUE FROM HL TO DE - “MOVE1”
+;   moves the number of bytes specified in B register
+;   from the address in HL to the address in DE. Uses A, B, DE and HL.
+; ----------------------------------------------------------------------
 MOVE1:	ld	a,(de)		;09d7
 	ld	(hl),a		;09d8
 	inc	de		;09d9
@@ -2766,21 +2801,31 @@ UNPACK:	ld	hl,FAC-1	;09df
 	xor	(hl)		;09f2
 	ret			;09f3
 ; ----------------------------------------------------------------------
-; 09F4H-09FBH – MATH ROUTINE – “VMOVFA”
-;   This routine moves a number of bytes (the number depending
-;   on the value stored in the VALTYPE) from (HL) to the ACCumulator.
-;   All Registers except C are affected.
+; 09F4H-09FBH – MOVE FROM ACCUM2 TO ACCUM – “VMOVFA”
+;   Copy any precision value from ACCUM2 to ACCUM.
+;   Precision and number of bytes moved determined by NTF.
 ; ----------------------------------------------------------------------
 VMOVFA:	ld	hl,ARGLO	;09f4
+; ----------------------------------------------------------------------
+; 09F7 – MOVE FROM (HL) TO ACCUM – “VMOVFA”
+;   Copy any precision value from address pointed to by HL to ACCUM
+;   Precision and number of bytes moved determined by NTF.
+; ----------------------------------------------------------------------
 VMOVFM:	ld	de,MOVVFM	;09f7
 	jr	VMOVMF		;09fa
 ; ----------------------------------------------------------------------
-; 09FCH-0A0BH – MATH ROUTINE – “VMOVAF”
-;   This is the opposite of 9F4H. This routine moves a number of bytes
-;   (the number depending on the value stored in the VALTYPE) from the
-;   ACCumulator to (HL). All Registers except C are affected.
+; 09FCH-0A0BH – MOVE FROM ACCUM TO ACCUM2 – “VMOVAF”
+;   Copy any precision value from ACCUM to ACCUM2.
+;   Precision and number of bytes moved determined by NTF.
+;   All Registers except C are affected.
 ; ----------------------------------------------------------------------
 VMOVAF:	ld	hl,ARGLO	;09fc
+; ----------------------------------------------------------------------
+; 09FFH – MOVE FROM ACCUM TO (HL) – “VMOVAF”
+;   Copy any precision value from ACCUM to address pointed to by HL.
+;   Precision and number of bytes moved determined by NTF.
+;   All Registers except C are affected.
+; ----------------------------------------------------------------------
 	ld	de,VMOVE	;09ff
 VMOVMF:	push	de		;0a02
 VDFACS:	ld	de,FACLO	;0a03
@@ -2943,7 +2988,7 @@ CONIS:	ld	a,(FAC)		;0a8e
 	ex	de,hl		;0a98
 CONIS1:	pop	de		;0a99
 ; ----------------------------------------------------------------------
-; 0A9AH - LEVEL II BASIC CONVERSION ROUTINE- "MAKINT"
+; 0A9AH - LEVEL II BASIC CONVERSION ROUTINE - "MAKINT" - MOVE
 ;   This is the routine that returns the value in the HL Register Pair
 ;   to the BASIC program that called it. In effect it moves the content
 ;   of HL into the ACCumulator so it is ACCumulator = (HL)
@@ -3053,7 +3098,7 @@ TMERR:	ld	e,ERRTM		;0af6
 ; ----------------------------------------------------------------------
 ; 0AFBH-0B1EH – MATH ROUTINE – “QINT”
 ;   This routine is a quick “Greatest Integer” function. Registers A-E are affected.
-;   The result of INT(ACCumulator) is left in C/D/E as a signed number
+;   The result of INT(ACCumulator) is left in BC DE as a signed number
 ; ----------------------------------------------------------------------
 QINT:	ld	b,a		;0afb
 	ld	c,a		;0afc
