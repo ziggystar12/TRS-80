@@ -619,8 +619,9 @@ USEDEF:	dec	hl		;00e7 - minus 1
 ; 0105H-011BH – MESSAGE STORAGE
 ; ----------------------------------------------------------------------
 ;
-MEMMSG:	.DB	"Memory Size",0			     ; RS Mem Size Message V1.2
-HDGMSG:	.DB	"Radio Shack Level IV BASIC",ENTER,0 ; RS L2 Basic Message V1.2
+HDGMSG:	.DB	"Radio Shack Level II BASIC",ENTER	; RS L2 Basic Message V1.2
+	.DB	"(Rev 1.4a)",ENTER,0
+	.FILL	($012D - $)				; UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; 012DH – ?L3 ERROR ENTRY POINT – "L3ERR"
@@ -9351,8 +9352,14 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 	.ECHO	"  * KEYBOUNCE uses "
 	.ECHO	($ - KEYBOU)
 	.ECHO	" bytes. \n"
-	.ECHO
 #ENDIF
+; ----------------------------------------------------------------------
+;
+MEMMSG:	.DB	"Memory Size",0			     ; RS Mem Size Message V1.2
+; ----------------------------------------------------------------------
+	.ECHO	"  * MEMMSG uses "
+	.ECHO	($ - MEMMSG)
+	.ECHO	" bytes. \n"
 ;
 ; ======================================================================
 	.ECHO 	"  "
@@ -10230,7 +10237,7 @@ SYSSTK:	.EQU	MEMEND+$88	; Stack address usd by SYSTEM command
 ; versions into a larger (modern) paged ROM file.
 ;
 #IFDEF	SIZE16K
-	.FILL	(4000h - $), $FF
+	.FILL	(4000h - $)
 #ENDIF
 ; ======================================================================
 ;
