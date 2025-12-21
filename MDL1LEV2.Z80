@@ -1179,11 +1179,11 @@ GODO:	ex	de,hl		;031d - put user input buffer into DE
 ;   the location 409CH must be loaded with -1 tape, 0 video, or 1 for printer.
 ; ----------------------------------------------------------------------
 OUTDO:	push	bc		;032a
-	ld	c,a		;032b
-	call	EXOUTC		;032c
+	ld	c,a		;032b - Save the character
+	call	EXOUTC		;032c - DOS EXIT for character output
 	ld	a,(PRTFLG)	;032f - get the current Device
 	or	a		;0332 - set the flags
-	ld	a,c		;0333
+	ld	a,c		;0333 - get the character back into A
 	pop	bc		;0334
 	jp	m,CASOUT	;0335 - if is It Cassette
 	jr	nz,OUTLPT	;0338 - if it is Printer
@@ -1264,7 +1264,7 @@ INCHR:	call	ISCHAR		;0384
 ; ----------------------------------------------------------------------
 ; 038BH-039BH – PRINTER ROUTINE – “FINLPT”
 ; ----------------------------------------------------------------------
-FINLPT:	xor	a		;038b
+FINLPT:	xor	a		;038b - DEV0VID
 	ld	(PRTFLG),a	;038c - set current output device VIDEO
 	ld	a,(LPTPOS)	;038f
 	or	a		;0392
@@ -1955,8 +1955,9 @@ INIT:
 ;
 INITA1:	ld	hl,INITR	;0676 - starting address of the RST’s and DCB’s
 	ld	de,RAM		;0679 - starting address of the RAM comms region
-	ld	bc,$0036	;067c - move 36 bytes
+	ld	bc,$36		;067c - move 54 bytes
 	ldir			;067f - Move 6D2-707 to 4000-4035
+;
 	dec	a		;0681 - count down by 2 starting at 0
 	dec	a		;0682 - so effective loop
 	jr	nz,INITA1	;0683 - Loop back until block move occurred 128 times
@@ -1999,7 +2000,7 @@ BOOT:	jp	_START		;069f - NO DISK - Just do Power Up cycle
 ; (start of Floppy boot Support)
 ;
 	ld	a,(diskstat)	;0696 - status of the disk controller (37ECH)
-	inc	a		;0699
+	inc	a		;0699 - FF => 0, 0 => 1
 	cp	$02		;069a - is disk controller present.
 	jp	c,INIT2		;069c - Jump to Level II Init if no disk controller
 ;
@@ -2009,8 +2010,9 @@ BOOT:	jp	_START		;069f - NO DISK - Just do Power Up cycle
 ; Now we know (can assume) there is a disk controller and we should boot it.
 ; ----------------------------------------------------------------------
 ;
-BOOT:	ld	a,$01		;069f
-	ld	(dskselect),a	;06a1 - Select Drive :0 and turn the motor on
+BOOT:	ld	a,$01		;069f - Drive 0
+	ld	(dskselect),a	;06a1 - Select Drive, turning motor on
+;
 	ld	hl,diskstat	;06a4 - address of the disk command/status Register 37ECH
 	ld	de,diskdata	;06a7 - address of the disk data Register (37EFH)
 	ld	(hl),$03	;06aa - command 03H (RESTORE and POSITION TO TRACK 0)
@@ -2020,16 +2022,20 @@ BOOT:	ld	a,$01		;069f
 	ld	bc,$0000	;06ac
 #ENDIF
 	call	DELAY		;06af - delay (BC times 14.65) about 3 seconds
+;
 BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
 	jr	nz,BOOTDL	;06b4 - Wait until it is ready
+;
 	xor	a		;06b6
 	ld	(disksect),a	;06b7 - set the disk sector register with 0
 	ld	bc,MEMEND	;06ba - address to read sector data (4200H)
 	ld	a,$8C		;06bd - command to read single IBM formatted sector
-	ld	(hl),a		;06bf
+	ld	(hl),a		;06bf - send command to FDC register
+;
 BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
-	jr	z,BOOTLP	;06c2
-	ld	a,(de)		;06c4 - load byte from disk controller
+	jr	z,BOOTLP	;06c2 - loop indefinitely until data ready
+;
+	ld	a,(de)		;06c4 - load byte from disk data register
 	ld	(bc),a		;06c5 - write byte to ram.
 	inc	c		;06c6 - next mem address
 	jr	nz,BOOTLP	;06c7 - Loop until whole 256 byte sector has been read
@@ -2954,6 +2960,7 @@ FRCINT:	TSTDAT			;0a7f - check the value of the current number type
 	ld	hl,(FACLO)	;0a80 - in case an int, Load HL with the integer
 	ret	m		;0a83 - If an INTEGER, then return HL
 	jp	z,TMERR		;0a84 - If a STRING, Display a ?TM ERROR
+;
 #IFDEF BUGFIX5
 	NOP3
 #ELSE
@@ -5674,7 +5681,7 @@ CONSTR:	sub	$00		;4080 (FDIVC) - Note Argument is set into working RAM
 	.DB	0		;4099 (CHARC) - Inkey $ Storage
 	.DB	0		;409A (ERRFLG) - current error flag
 	.DB	0		;409B (LPTPOS) - current tab position
-	.DB	0		;409C (PRTFLG) - device output flag
+	.DB	DEV0VID		;409C (PRTFLG) - device output flag
 	.DB	64		;409D (LINLEN) - max chars on video disp line
 	.DB	48		;409E (CLMLST) - Size of print line
 	.DB	0		;409F - RESERVED
@@ -7193,7 +7200,7 @@ LPRIN1:	jp	NEWCHR		;206c * * *
 #IFDEF VER13
 ;
 PRINT:	call	FILGET		;206f
-	cp	'#'		;2072
+	cp	'#'		;2072 Check for Cassette
 	jr	nz,PNOTAT	;2074
 	call	CWRTON		;2076 Write header on cassette file
 	ld	(PRTFLG),a 	;2079 Set current system device to cassette
@@ -7281,12 +7288,14 @@ PRINTC:	jp	z,FINPRT	;20a0
 	or	a		;20cf - set flags
 	jp	m,LINCH2	;20d0 - If we writing to a cassette
 	jr	z,ISTTY		;20d3 - If NOT LPRINT
+; ----------------------------------------------------------------------
+;   Lands here if we are sure we are using the printer
+; ----------------------------------------------------------------------
 	ld	a,(LPTPOS)	;20d5 - We have a LPRINT, Get carriage POS
 	add	a,(hl)		;20d8
 	cp	132		;20d9 - Is the adjusted length greater than 132
 	jr	LINCHK		;20db
 ; ----------------------------------------------------------------------
-; 20DDH – LEVEL II BASIC PRINT@ ROUTINE – “ISTTY”
 ;   Jumped here if we are sure we are using the display
 ; ----------------------------------------------------------------------
 ISTTY:	ld	a,(LINLEN)	;20dd
@@ -7294,6 +7303,7 @@ ISTTY:	ld	a,(LINLEN)	;20dd
 	ld	a,(TTYPOS)	;20e1 - current video line position
 	add	a,(hl)		;20e4 - Add the len of string to be displayed
 	cp	b		;20e5 - compare with line size
+;
 LINCHK:	call	nc,CRDO		;20e6 - the new line will overflow the buffer -> CR
 LINCH2:	call	STRPRT		;20e9
 	ld	a,SPACE		;20ec
@@ -7386,7 +7396,7 @@ FINPRT:
 	ld	a,(PRTFLG)	;2169 - current output device flag
 	or	a		;216c - check the flags
 	call	m,CTOFF		;216d - If cassette, turn it off
-	xor	a		;2170
+	xor	a		;2170 - DEV0VID
 	ld	(PRTFLG),a	;2171 - set current output device type = VIDEO
 	call	FINDRT		;2174 - DOS Exit Point
 	ret			;2177
@@ -7398,14 +7408,18 @@ TRYAGN:	.DB	"?REDO"
 	.DB	0
 ; ----------------------------------------------------------------------
 ; 217F-2285 – INPUT AND READ ROUTINES– “TRMNOK”
+;   This is a multi-purpose processing routine. We can wind up here because
+;     DATA was typed in ; DATA statements were improperly formatted.
+;   We can also wind up here where we want an INPUT to start again.
+;   If we are here because of a READ, throw a ?SN ERROR at the data line.
 ; ----------------------------------------------------------------------
 TRMNOK:	ld	a,(FLGINP)	;217f
 	or	a		;2182
 	jp	nz,DATSNE	;2183
-	ld	a,(CASFLG)	;2186
+	ld	a,(CASFLG)	;2186 - test the cassette flag
 	or	a		;2189
-	ld	e,ERRFD		;218a
-	jp	z,ERROR		;218c
+	ld	e,ERRFD		;218a - ?FD ERROR
+	jp	z,ERROR		;218c - If input device is cassette
 	pop	bc		;218f
 	ld	hl,TRYAGN	;2190
 	call	STROUT		;2193
@@ -7419,7 +7433,7 @@ INPUT:	call	ERRDIR		;219a
 	ld	a,(hl)		;219d
 	call	EXUNKN		;219e
 	sub	'#'		;21a1 - compare with #
-	ld	(CASFLG),a	;21a3
+	ld	(CASFLG),a	;21a3 - set the cassette flag
 	ld	a,(hl)		;21a6
 	jr	nz,INTCAS	;21a7
 	call	CSRDON		;21a9
@@ -7496,10 +7510,10 @@ LOPDAT:	call	PTRGET		;21fd
 	ld	a,(FLGINP)	;2207
 	or	a		;220a
 	jp	nz,DATLOP	;220b
-	ld	a,(CASFLG)	;220e
-	or	a		;2211
-	ld	e,ERROD		;2212
-	jp	z,ERROR		;2214
+	ld	a,(CASFLG)	;220e - value of the cassette input flag.
+	or	a		;2211 - set flags
+	ld	e,ERROD		;2212 - ?OD ERROR
+	jp	z,ERROR		;2214 - if the input is from cassette
 	ld	a,'?'		;2217
 	call	OUTDO		;2219
 	call	QINLIN		;221c
@@ -10340,9 +10354,13 @@ QED:	pop	bc		;2ff6
 ;  Input Output Map
 ; ----------------------------------------------------------------------
 ;
+#IFDEF EACA80
+;
 ; On Disk Smith System 80 (EACA) there are additional Hardware IO ports
 prtport: .EQU	$FD		; Printer Port (replaces 37E8)
 casport: .EQU	$FE		; Cassette Select Port (replaces 37E4)
+;
+#ENDIF
 ;
 vidcmt:	 .EQU	$FF		; VIDEO I/O Mode select and Cassette Port
 ;
