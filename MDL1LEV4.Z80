@@ -22,7 +22,7 @@
 ;
 ; Rom Additional Features
 #DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
-#DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (incl NMIHARD)
+#DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup ()
 #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
 ;
 ; Rom 1.3 Features (can be disabled to save space)
@@ -76,6 +76,15 @@
 ;   • TRS-80 Rom Routines Documented (The Alternate Source) - Jack Decker
 ;
 ; ======================================================================
+;
+#IFDEF EACA80
+	.ECHO	" EACA80 - EACA hardware support enabled \n"
+#ENDIF
+
+#IFDEF FREHDBT
+	.ECHO	" FREHDBT - FreHD autoboot support enabled \n"
+#ENDIF
+
 ;
 ; ----------------------------------------------------------------------
 ;   BASIC TOKENS IDS
@@ -488,6 +497,7 @@ DELAY:	dec	bc		;0060
 ;
 NMI:	jp	_START		;0066 - wrong Stack Pointer.
 ;
+	.ECHO	" NMIHARD - NMI full system reset enabled \n"
 	.FILL	(0072h - $,0)	;UNUSED fill the space to next routine with ZERO's
 ;
 #ELSE
@@ -768,10 +778,6 @@ RANDOM:	ld	a,r		;01d3 - R (refresh) Reg - semi random number.
 	ld	(RNDX+1),a	;01d5
 	ret			;01d8
 ;
-; ======================================================================
-	.ECHO 	" ROM REGION - (01D9 - 02B1) \n"
-; ======================================================================
-;
 ; ----------------------------------------------------------------------
 ; 01D9H-01F7H – CASSETTE ROUTINE
 ;   Output a pulse to the cassette recorder
@@ -960,12 +966,6 @@ ENBLK:	call	CADRIN		;02a9
 	ld	(TEMP),hl	;02ac
 	call	CTOFF		;02af
 ;
-; ======================================================================
-	.ECHO 	"  "
-	.ECHO	($02B2 - $)
-	.ECHO   " of 217 bytes free \n"
-	.FILL	($02B2 - $)
-; ======================================================================
 ;
 ; ----------------------------------------------------------------------
 ; 02B2 – LEVEL II BASIC SYSTEM ROUTINE – “SYSTEM”
@@ -981,49 +981,19 @@ SYSTEM:	call	SYSOUT		;02b2 - Call the DOS exit for system command at 41E2H.
 	GETCHR			;02c6 - rst 10h - first byte of user input
 	jp	z,SNERR		;02c7 - if no input then a syntax error
 	cp	'/'		;02ca - check for a slash command
-	jr	z,GODO		;02cc - jump to routine to handle execution
-; ----------------------------------------------------------------------
-; 02CE - Load Binary program from tape
-; ----------------------------------------------------------------------
-	call	CSRDON		;02ce - turn on cassette motor here
-LOPHD:	call	CASIN		;02d1 - read one byte from cassette
-	cp	$55		;02d4 - check for header byte
-	jr	nz,LOPHD	;02d6 - loop until header found
-	ld	b,6		;02d8 - length of filename to read from tape
-CHKBYT:	ld	a,(hl)		;02da - START LOOP - Get character in inout buffer
-	or	a		;02db - set flags
-	jr	z,GETDT		;02dc - if character is end of buffer, skip check
-	call	CASIN		;02de - read one byte from cassette
-	cp	(hl)		;02e1 - did it match users character
-	jr	nz,LOPHD	;02e2 - if not skip to next program on tape
-	inc	hl		;02e4 - next character to check
-	djnz	CHKBYT		;02e5 - LOOP to check next character
+	jp	nz,SNERR	;IF NOT a "/" command then a syntax error
+	jr	GODO		;jump to routine to handle execution
 ;
-GETDT:	call	BCASIN		;02e7 - Blink * in top right corner
-GETDT2:	call	CASIN		;02ea - read one byte from cassette
-	cp	$78		;02ed - check for execution address header byte
-	jr	z,ENBLK		;02ef
-	cp	$3C		;02f1 - check for file block header byte
-	jr	nz,GETDT2	;02f3 - loop until find a correct header byte
+; ======================================================================
+	.ECHO 	" ROM REGION - (02D0 - 0313) - System \n"
+; ======================================================================
 ;
-	call	CASIN		;02f5 - read number of Bytes in the Block
-	ld	b,a		;02f8 - store byte count in B for loop
-	call	CADRIN		;02f9 - read two bytes Block Starting address -> HL
-	add	a,l		;02fc - Add LSB of starting address to byte count
-	ld	c,a		;02fd - Store Checksum (starting) in C register
-LDATIN:	call	CASIN		;02fe - read one byte from cassette
-	ld	(hl),a		;0301 - store the byte in memory
-	inc	hl		;0302 - next address
-	add	a,c		;0303 - Calculate the checksum
-	ld	c,a		;0304 - Update Checksum in C register
-	djnz	LDATIN		;0305 - LOOP
-	call	CASIN		;0307 - read one byte from cassette - Checksum
-	cp	c		;030a - Is it same the as calculated checksum
-	jr	z,GETDT		;030b - if GOOD Checkum - LOOP BACK for next block
-;
-	ld	a,'C'		;030d - C Character
-	ld	(vidmem+$3E),a	;030f - Write into Video Memory
-	jr	GETDT2		;0312 - LOOP BACK for next block
+; ======================================================================
+	.ECHO 	"  "
+	.ECHO	($0314 - $)
+	.ECHO   " of 67 bytes free \n"
+	.FILL	($0314 - $)
+; ======================================================================
 ;
 ; ----------------------------------------------------------------------
 ; 0314H – Read 2 bytes from the tape into Register Pair HL – “CADRIN”
@@ -1346,6 +1316,8 @@ DSPGRP:	ld	a,c		;0467 - convert and display the charater
 	jr	nc,DSPGRC	;046f - display graphic
 #IFDEF LOWCASE
 	jr	DSPCHR		;0471 - Disable all Alpha CHR translation
+;
+	.ECHO	" LOWCASE - Lowercase support enabled \n"
 	.FILL	(047Dh - $,0)	;UNUSED Fill Deleted code bock (ELSE) with NOP's
 #ELSE
 	cp	$40		;0471 - is it number or symbol ASCII 20h - 40h
@@ -2794,7 +2766,10 @@ FRCINT:	TSTDAT			;0a7f - check the value of the current number type
 	ld	hl,(FACLO)	;0a80 - in case an int, Load HL with the integer
 	ret	m		;0a83 - If an INTEGER, then return HL
 	jp	z,TMERR		;0a84 - If a STRING, Display a ?TM ERROR
+;
 #IFDEF BUGFIX5
+;
+	.ECHO	" BUGFIX5 - ROM Error 5 Patched \n"
 	NOP3
 #ELSE
 ; If double-precision (NC flag set based on type), call the subroutine at 0AB9H
@@ -9330,7 +9305,7 @@ MLOOP:	ld	a,(de)		;2be8
 	ret			;2bf4
 ;
 ; ======================================================================
-	.ECHO 	" ROM REGION - (2BF5 - 2CA4) \n"
+	.ECHO 	" ROM REGION - (2BF5 - 2CA4) - Cload Csave \n"
 ; ======================================================================
 ;
 ; ----------------------------------------------------------------------
