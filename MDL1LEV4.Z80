@@ -1,6 +1,6 @@
 ;
 ; ======================================================================
-;        TRS-80 Model I Level II BASIC ROM - (Disassembled)
+;        TRS-80 Model I Level IV BASIC ROM
 ;
 ;     Source Code Created By : kiwisincebirth - 2025
 ;     [https://github.com/kiwisincebirth/TRS-80]
@@ -8,29 +8,25 @@
 ; ======================================================================
 ;     NOTE: this code has been formatted with 8 spaces per tab
 ; ----------------------------------------------------------------------
-; Rom Version Definition
-; #DEFINE VER13   ; Set by Default if VER12 is not defined, dont uncomment
-; #DEFINE VER12	  ; Uncomment for V1.2, Leave Commented for V1.3
-; #DEFINE EACA80  ; Uncomment to enable System-80 (EACA) hardware support
 ;
+; BASED OFF LEVEL 2 ROMS
 ; Version 1.3 - 80/02
 ; Date: 01/07/80-01/13/80
 ; CRC-32: A8E60D9A
-
-; Version 1.2 - 79/12
-; Date: 03/19/78 - 03/25/79
-; CRC-32: 0D8A132E
+;
+; Rom Hardware Support
+; #DEFINE EACA80  ; Uncomment to enable System-80 (EACA) hardware support
 ;
 ; Rom Bug Fixes
-; #DEFINE BUGFIX5 ; Uncomment to Fix Error 5 - 08A7H - INT(DoubleValue) rounding
+#DEFINE BUGFIX5 ; Uncomment to Fix Error 5 - 08A7H - INT(DoubleValue) rounding
 ;
 ; Rom Additional Features
-; #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
-; #DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
-; #DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (incl VER13, NMIHARD)
+#DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
+#DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (069Ch)
+#DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
 ;
-; Experimental Features
-; #DEFINE NO37EXH ; Uncomment to disable use of memory mapped devices at 37Ex (incl NMIHARD)
+; Rom 1.3 Features (can be disabled to save space)
+#DEFINE KEYBOUNCE ; Uncomment to enable 1.3 Keyboard Debounce (03FBh)
 ;
 ; Build Features
 ; #DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
@@ -81,26 +77,14 @@
 ;
 ; ======================================================================
 ;
-#IFNDEF VER12
-    #IFNDEF VER13
-    	#DEFINE VER13	; Ensure 1.3 is the default if 1.2 is not defined.
-    #ENDIF
+#IFDEF EACA80
+	.ECHO	" EACA80 - EACA hardware support enabled \n"
 #ENDIF
-;
+
 #IFDEF FREHDBT
-    #IFNDEF VER13
-        #DEFINE VER13 	; VER13 must be used if FreHD is defined
-    #ENDIF
-    #IFNDEF NMIHARD
-	#DEFINE NMIHARD	; NMIHARD must be used if FreHD is defined
-    #ENDIF
+	.ECHO	" FREHDBT - FreHD autoboot support enabled \n"
 #ENDIF
-;
-#IFDEF NO37EXH
-    #IFNDEF NMIHARD
-	#DEFINE NMIHARD	; NMIHARD must be used if NO37EXH is defined
-    #ENDIF
-#ENDIF
+
 ;
 ; ----------------------------------------------------------------------
 ;   BASIC TOKENS IDS
@@ -482,12 +466,11 @@ KEYTAB:	.DB	ENTER,	ENTER	; ENTER
 	.DB	CLRKEY,	CLRKEY	; CLEAR
 	.DB	BREAK,	BREAK	; BREAK
 	.DB	UPARRW,	ARUP	; ↑ Up Arrow
-#IFDEF VER13
 	.DB	LINEF,	$00	; ↓ Down Arrow
 				; to permit Shift-Down-Arrow to act as a control key
-#ELSE
-	.DB	LINEF,	ARDOWN	; LF, ↓ Down Arrow
-#ENDIF
+	; Previously in V1.2 it was
+	; .DB	LINEF,	ARDOWN	; LF, ↓ Down Arrow
+
 	.DB	BACKS,	ARLEFT	; BS, ← Left arrow
 	.DB	TAB,	ARIGHT	; Tab, -> right arrow
 	.DB	SPACE,	SPACE	; Space
@@ -514,13 +497,7 @@ DELAY:	dec	bc		;0060
 ;
 NMI:	jp	_START		;0066 - wrong Stack Pointer.
 ;
-#IFDEF FREHDBT
-;				;If Fre HD we use this space for improved hdboot routine
-HDBOOT:	call	CLS		;0069 - Clear Screen
-	call	DELAY		;006c - pause for a few seconds
-	jp	HDBOOT2		;006f - continue hdboot
-#ENDIF
-;
+	.ECHO	" NMIHARD - NMI full system reset enabled \n"
 	.FILL	(0072h - $,0)	;UNUSED fill the space to next routine with ZERO's
 ;
 #ELSE
@@ -634,105 +611,17 @@ USEDEF:	dec	hl		;00e7 - minus 1
 	add	hl,de		;00f5 - subtract 32 bytes from the memory size
 	ld	(STKTOP),hl	;00f6 - start of string space pointer MEMSIZE-32
 	call	SCRTCH		;00f9 - init the Level II variables and pointers
-#IFNDEF FREHDBT
-	; FreHD does not print this message, saving 6 bytes here
 	ld	hl,HDGMSG	;00fc - Radio Shack L2 Basic - Message
 	call	STROUT		;00ff - print the message
-#ENDIF
-; then it jumps to the entry point for the BASIC command mode
 	jp	READY		;0102 - Level II BASIC READY routine
-;
-#IFDEF VER13
-;
-; (start V1.3)
-;
-#IFDEF FREHDBT
-;
-; ----------------------------------------------------------------------
-; 00FFH-0112H – HDBOOT - FreHD HD bootup routine
-; using space saved by HDGMSG startup message
-; ----------------------------------------------------------------------
-;
-#IFNDEF NMIHARD
-HDBOOT:				; if NMIHARD is not enabled HDBOOT starts here.
-#ENDIF
-;
-HDBOOT2: ld	a,ROM_MODEL_1	;00ff - ROM parameter to FreHD. 1 for Model1.
-        out	(WRITEROM),a	;0101 - write the value
-        in	a,(READROM)	;0103 - read response
-        cp	0FEh		;0105 - FE is FreHD present and valid code!
-        ret	nz		;0107 - return if no FreHD or old firmware
-        ld	hl,ROM_LOAD	;0108 - load more "rom" from FreHD
-        ld	bc,READROM	;010b - port to read and size counter
-        inir			;010e - bulk transfer
-        jp	ROM_LOAD	;0110 - jump to loader in RAM
-;
-#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ; 0105H-011BH – MESSAGE STORAGE
-;   Note: Starts at 0113H if FreHD has been defined
 ; ----------------------------------------------------------------------
 ;
-#IFDEF EACA80
-MEMMSG:	.DB	"READY ",0,0,0  ; EACA-80 Mem Size Message (V1.3)
-#ELSE
-MEMMSG:	.DB	"MEM SIZE",0	; RS Mem Size Message V1.3
-#ENDIF
-
-#IFNDEF FREHDBT
-		; If FreHD then this message is removed
-		; saving enough space for the HDBOOT routine (00FFH) above
-
-#IFDEF EACA80
-		; EACA-80 L2 Basic (blank) Message V1.3
-HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
-#ELSE
-HDGMSG:	.DB	"R/S L2 BASIC",ENTER,0 ; RS L2 Basic Message V1.3
-#ENDIF
-;
-#ENDIF
-;
-; ----------------------------------------------------------------------
-; 011CH-012CH – KEYBOUNCE V1.3
-; using space save by the shortened startup messages
-; ----------------------------------------------------------------------
-KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
-	ld 	bc,$0500	;011D the debounce delay
-	call	DELAY		;0120 delay on delay count in BC (18.8 ms)
-	pop	bc		;0123 Restore the Row Address back to BC
-	ld	a,(bc)		;0124 Reload the original flags from active row
-	and	e		;0125 Combine the current flag lists with the original flag bits
-	ret	z		;0126 Return to caller if zero because the row was not active on the second test
-	ld	a,d		;0127 Otherwise, we have a legitimate active row
-	rlca			;0128 Multiply the row index by 2. twice.
-	rlca			;0129 This code previously existed at the calling site
-	jp	KYDRES		;012A Resume the keyboard driver routine
-;
-; (finish 1.3)
-;
-#ELSE
-;
-; (start V1.2)
-;
-; ----------------------------------------------------------------------
-; 0105H-012CH – MESSAGE STORAGE (VERSION 1.2)
-; ----------------------------------------------------------------------
-;
-#IFDEF EACA80
-MEMMSG:	.DB	"READY ",0,0,0,0,0,0	; EACA-80 Mem Size Message V1.2
-		; EACA-80 L2 Basic (blank) Message V1.2
-HDGMSG:	.DB	ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
-        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER
-        .DB     ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,ENTER,0
-#ELSE
-MEMMSG:	.DB	"MEMORY SIZE",0			     ; RS Mem Size Message V1.2
-HDGMSG:	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 Basic Message V1.2
-#ENDIF
-;
-; (finish V1.2)
-;
-#ENDIF
+HDGMSG:	.DB	"Radio Shack Level II BASIC",ENTER	; RS L2 Basic Message V1.2
+	.DB	"(Rev 1.4a)",ENTER,0
+	.FILL	($012D - $)				; UNUSED
 ;
 ; ----------------------------------------------------------------------
 ; 012DH – ?L3 ERROR ENTRY POINT – "L3ERR"
@@ -939,11 +828,7 @@ CTON:	ld	a,(hl)		;01fe - char from BASIC program pointer
 ; ----------------------------------------------------------------------
 DEFDRV:
 #IFNDEF EACA80
-    #IFDEF NO37EXH
-    	NOP3			;0212 - No memory mapped IO so just ignore
-    #ELSE
 	ld	(casselect),a	;0212 - Set the requested cassette
-    #ENDIF
 #ELSE
 	out	(casport),a	;0212 - On Dick Smith System-80 (EACA) use IO port
 	nop			;0214 - Nop since OUT is only 2 byte instruction
@@ -997,22 +882,12 @@ CTBIT:	push	bc		;0241
 CB0:	in	a,(vidcmt)	;0243 - Read BIT from cassette port
 	rla			;0245
 	jr	nc,CB0		;0246
-;
-#IFDEF VER13
 	ld	b,$60		;0248 - Delay for 703 microseconds (assume)
-#ELSE
-	ld	b,$41		;0248 - Delay for 476 microseconds
-#ENDIF
-;
+	; ld	b,$41		;0248 - Delay for 476 microseconds (V1.2)
 CB1:	djnz	CB1		;024a - Delay Loop
 	call	CTSTAT		;024c - clear the cassette controller
-;
-#IFDEF VER13
 	ld	b,$85		;024f - Then Delay for 975 microseconds (assume)
-#ELSE
-	ld	b,$76		;024f - Then delay for 865 microseconds
-#ENDIF
-;
+	; ld	b,$76		;024f - Then delay for 865 microseconds (V1.2)
 CB2:	djnz	CB2		;0251 - Delay Loop
 	in	a,(vidcmt)	;0253 - Read BIT from cassette port
 	ld	b,a		;0255
@@ -1092,6 +967,7 @@ ENBLK:	call	CADRIN		;02a9
 	ld	(TEMP),hl	;02ac
 	call	CTOFF		;02af
 ;
+;
 ; ----------------------------------------------------------------------
 ; 02B2 – LEVEL II BASIC SYSTEM ROUTINE – “SYSTEM”
 ; ----------------------------------------------------------------------
@@ -1106,49 +982,20 @@ SYSTEM:	call	SYSOUT		;02b2 - Call the DOS exit for system command at 41E2H.
 	GETCHR			;02c6 - rst 10h - first byte of user input
 	jp	z,SNERR		;02c7 - if no input then a syntax error
 	cp	'/'		;02ca - check for a slash command
-	jr	z,GODO		;02cc - jump to routine to handle execution
-; ----------------------------------------------------------------------
-; 02CE - Load Binary program from tape
-; ----------------------------------------------------------------------
-	call	CSRDON		;02ce - turn on cassette motor here
-LOPHD:	call	CASIN		;02d1 - read one byte from cassette
-	cp	$55		;02d4 - check for header byte
-	jr	nz,LOPHD	;02d6 - loop until header found
-	ld	b,6		;02d8 - length of filename to read from tape
-CHKBYT:	ld	a,(hl)		;02da - START LOOP - Get character in inout buffer
-	or	a		;02db - set flags
-	jr	z,GETDT		;02dc - if character is end of buffer, skip check
-	call	CASIN		;02de - read one byte from cassette
-	cp	(hl)		;02e1 - did it match users character
-	jr	nz,LOPHD	;02e2 - if not skip to next program on tape
-	inc	hl		;02e4 - next character to check
-	djnz	CHKBYT		;02e5 - LOOP to check next character
+	jp	nz,SNERR	;IF NOT a "/" command then a syntax error
+	jr	GODO		;jump to routine to handle execution
 ;
-GETDT:	call	BCASIN		;02e7 - Blink * in top right corner
-GETDT2:	call	CASIN		;02ea - read one byte from cassette
-	cp	$78		;02ed - check for execution address header byte
-	jr	z,ENBLK		;02ef
-	cp	$3C		;02f1 - check for file block header byte
-	jr	nz,GETDT2	;02f3 - loop until find a correct header byte
+; ======================================================================
+	.ECHO 	" ROM REGION - (02D0 - 0313) - System \n"
+; ======================================================================
 ;
-	call	CASIN		;02f5 - read number of Bytes in the Block
-	ld	b,a		;02f8 - store byte count in B for loop
-	call	CADRIN		;02f9 - read two bytes Block Starting address -> HL
-	add	a,l		;02fc - Add LSB of starting address to byte count
-	ld	c,a		;02fd - Store Checksum (starting) in C register
-LDATIN:	call	CASIN		;02fe - read one byte from cassette
-	ld	(hl),a		;0301 - store the byte in memory
-	inc	hl		;0302 - next address
-	add	a,c		;0303 - Calculate the checksum
-	ld	c,a		;0304 - Update Checksum in C register
-	djnz	LDATIN		;0305 - LOOP
-	call	CASIN		;0307 - read one byte from cassette - Checksum
-	cp	c		;030a - Is it same the as calculated checksum
-	jr	z,GETDT		;030b - if GOOD Checkum - LOOP BACK for next block
-;
-	ld	a,'C'		;030d - C Character
-	ld	(vidmem+$3E),a	;030f - Write into Video Memory
-	jr	GETDT2		;0312 - LOOP BACK for next block
+; ======================================================================
+R1FREE:	.EQU 	($0314 - $)
+	.ECHO 	"  "
+	.ECHO	R1FREE
+	.ECHO   " of 67 bytes free \n"
+	.FILL	R1FREE
+; ======================================================================
 ;
 ; ----------------------------------------------------------------------
 ; 0314H – Read 2 bytes from the tape into Register Pair HL – “CADRIN”
@@ -1361,7 +1208,8 @@ KEYLP:	ld	a,(bc)		;03eb
 ; ----------------------------------------------------------------------
 KEYDWN:	ld	e,a		;03fa
 ;
-#IFDEF VER13
+#IFDEF KEYBOUNCE
+;
         jp	KEYBOU		;03fb jump to the new keyboard debounce routine.
 KYDRES:				;03fe return address for keybounce
 ;
@@ -1470,6 +1318,8 @@ DSPGRP:	ld	a,c		;0467 - convert and display the charater
 	jr	nc,DSPGRC	;046f - display graphic
 #IFDEF LOWCASE
 	jr	DSPCHR		;0471 - Disable all Alpha CHR translation
+;
+	.ECHO	" LOWCASE - Lowercase support enabled \n"
 	.FILL	(047Dh - $,0)	;UNUSED Fill Deleted code bock (ELSE) with NOP's
 #ELSE
 	cp	$40		;0471 - is it number or symbol ASCII 20h - 40h
@@ -1742,11 +1592,7 @@ PRTFF:	call	PRTSTA		;05a6 - Call the GET PRINTER STATUS routine
 	jr	nz,PRTFF	;05a9 - Loop back until the printer is ready
 	ld	a,LINEF		;05ab - We print line feed character(s)
 #IFNDEF EACA80
-    #IFDEF NO37EXH
-    	NOP3			;05ad - Dont output since we dont have memory mapped IO
-    #ELSE
 	ld	(prtstat),a	;05ad - Send the character to the printer port 37E8H
-    #ENDIF
 #ELSE
 	nop			;05ad
 	out	(prtport),a	;05ae - On Dick Smith System-80 (EACA) use IO port
@@ -1761,11 +1607,7 @@ PRTIT2:	call	PRTSTA		;05b5 - Call the GET PRINTER STATUS routine
 	jr	nz,PRTIT2	;05b8 - Loop back until the printer is ready
 	pop	af		;05ba
 #IFNDEF EACA80
-    #IFDEF NO37EXH
-    	NOP3			;05ad - Dont output since we dont have memory mapped IO
-    #ELSE
 	ld	(prtstat),a	;05ad - Send the character to the printer port 37E8H
-    #ENDIF
 #ELSE
 	nop			;05bb
 	out	(prtport),a	;05bc - On Dick Smith System-80 (EACA) use IO port
@@ -1788,12 +1630,7 @@ PRTOP:	ld	(ix+4),0	;05cc
 ; ----------------------------------------------------------------------
 PRTSTA:
 #IFNDEF EACA80
-    #IFDEF NO37EXH
-    	ld	a,$30		;05d1 - No printer so return READY status
-    	nop
-    #ELSE
 	ld	a,(prtstat)	;05d1 - Get the status value from the printer (37E8H)
-    #ENDIF
 #ELSE
 	nop			;05d1
 	in	a,(prtport)	;05d2 - On Dick Smith System-80 (EACA) use IO port
@@ -1955,8 +1792,9 @@ INIT:
 ;
 INITA1:	ld	hl,INITR	;0676 - starting address of the RST’s and DCB’s
 	ld	de,RAM		;0679 - starting address of the RAM comms region
-	ld	bc,$0036	;067c - move 36 bytes
+	ld	bc,$36		;067c - move 54 bytes
 	ldir			;067f - Move 6D2-707 to 4000-4035
+;
 	dec	a		;0681 - count down by 2 starting at 0
 	dec	a		;0682 - so effective loop
 	jr	nz,INITA1	;0683 - Loop back until block move occurred 128 times
@@ -1979,27 +1817,8 @@ CLRAM:	ld	(de),a		;0687 - zero byte in memory starting at 4036h
 	call	HDBOOT		;0696 - Call to the FreHD hd boot routines.
 #ENDIF
 ;
-#IFDEF NO37EXH
-;
-; (start no Floppy boot Support)
-;
-	jp	INIT2		;0696 - Dont detect disk controller, JP to L2 Basic init
-	.FILL	(069Fh - $,0)	;fill the space to next routine with ZERO's
-;
-; ----------------------------------------------------------------------
-; 069FH-06CBH – IGNORE Bootstrap from Diskette – "BOOT"
-; ----------------------------------------------------------------------
-BOOT:	jp	_START		;069f - NO DISK - Just do Power Up cycle
-	.FILL	(06CCh - $,0)	;fill the space to next routine with ZERO's
-;
-; (end no Floppy boot Support)
-;
-#ELSE
-;
-; (start of Floppy boot Support)
-;
 	ld	a,(diskstat)	;0696 - status of the disk controller (37ECH)
-	inc	a		;0699
+	inc	a		;0699 - FF => 0, 0 => 1
 	cp	$02		;069a - is disk controller present.
 	jp	c,INIT2		;069c - Jump to Level II Init if no disk controller
 ;
@@ -2009,8 +1828,9 @@ BOOT:	jp	_START		;069f - NO DISK - Just do Power Up cycle
 ; Now we know (can assume) there is a disk controller and we should boot it.
 ; ----------------------------------------------------------------------
 ;
-BOOT:	ld	a,$01		;069f
-	ld	(dskselect),a	;06a1 - Select Drive :0 and turn the motor on
+BOOT:	ld	a,$01		;069f - Drive 0
+	ld	(dskselect),a	;06a1 - Select Drive, turning motor on
+;
 	ld	hl,diskstat	;06a4 - address of the disk command/status Register 37ECH
 	ld	de,diskdata	;06a7 - address of the disk data Register (37EFH)
 	ld	(hl),$03	;06aa - command 03H (RESTORE and POSITION TO TRACK 0)
@@ -2020,24 +1840,24 @@ BOOT:	ld	a,$01		;069f
 	ld	bc,$0000	;06ac
 #ENDIF
 	call	DELAY		;06af - delay (BC times 14.65) about 3 seconds
+;
 BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
 	jr	nz,BOOTDL	;06b4 - Wait until it is ready
+;
 	xor	a		;06b6
 	ld	(disksect),a	;06b7 - set the disk sector register with 0
 	ld	bc,MEMEND	;06ba - address to read sector data (4200H)
 	ld	a,$8C		;06bd - command to read single IBM formatted sector
-	ld	(hl),a		;06bf
+	ld	(hl),a		;06bf - send command to FDC register
+;
 BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
-	jr	z,BOOTLP	;06c2
-	ld	a,(de)		;06c4 - load byte from disk controller
+	jr	z,BOOTLP	;06c2 - loop indefinitely until data ready
+;
+	ld	a,(de)		;06c4 - load byte from disk data register
 	ld	(bc),a		;06c5 - write byte to ram.
 	inc	c		;06c6 - next mem address
 	jr	nz,BOOTLP	;06c7 - Loop until whole 256 byte sector has been read
 	jp	MEMEND		;06c9 - Hand execution to the boot sector code $4200
-;
-; (end of Floppy boot Support)
-;
-#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ; 06CCH-06CEH – (Model 1 Only!) - re-entry point into BASIC – "RESETR"
@@ -2954,7 +2774,10 @@ FRCINT:	TSTDAT			;0a7f - check the value of the current number type
 	ld	hl,(FACLO)	;0a80 - in case an int, Load HL with the integer
 	ret	m		;0a83 - If an INTEGER, then return HL
 	jp	z,TMERR		;0a84 - If a STRING, Display a ?TM ERROR
+;
 #IFDEF BUGFIX5
+;
+	.ECHO	" BUGFIX5 - ROM Error 5 Patched \n"
 	NOP3
 #ELSE
 ; If double-precision (NC flag set based on type), call the subroutine at 0AB9H
@@ -4618,15 +4441,8 @@ FOUNDVV: pop	af		;1243
 	push	af		;1247
 	call	FOUNVC		;1248
 FOUNDV3: pop	af		;124b
-;
-#IFDEF VER13
 	pop	de		;124d
 	or	a		;124c
-#ELSE
-	or	a		;124c
-	pop	de		;124d
-#ENDIF
-;
 	ret			;124e
 ; ----------------------------------------------------------------------
 ; 124F – MATH ROUTINE – “FOUNVC”
@@ -5558,8 +5374,8 @@ STMDSP:
 	.DW	DELETE		; DELETE
 	.DW	AUTO		; AUTO
 	.DW	CLEAR		; CLEAR
-	.DW	CLOAD		; CLOAD
-	.DW	CSAVE		; CSAVE
+	.DW	SNERR		; CLOAD - no longer supported (1.4)
+	.DW	SNERR		; CSAVE - no longer supported (1.4)
 	.DW	SCRATH		; NEW - ID = $BB
 ;
 ; ----------------------------------------------------------------------
@@ -5641,11 +5457,7 @@ ERRTAB:
 	.DB	"UE"		; Unprintable Error 	(26H)
 	.DB	"MO"		; Missing Operand 	(28H)
 	.DB	"FD"		; Bad file Data 	(2AH)
-#IFDEF	EACA80
-	.DB	"SN"		; Disk BASIC Command 	(2CH) - On Dick Smith System-80
-#ELSE
 	.DB	"L3"		; Disk BASIC Command 	(2CH)
-#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ; 18F7-1904 – STORAGE LOCATION FOR THE SINGLE PRECISION DIVISION ROUTINE
@@ -7189,9 +7001,6 @@ LPRIN1:	jp	NEWCHR		;206c * * *
 ; ----------------------------------------------------------------------
 ; 206F-2177 – LEVEL II BASIC PRINT@ ROUTINE – FOR v1.0 ONLY – “PRINT”
 ; ----------------------------------------------------------------------
-;
-#IFDEF VER13
-;
 PRINT:	call	FILGET		;206f
 	cp	'#'		;2072
 	jr	nz,PNOTAT	;2074
@@ -7230,47 +7039,6 @@ PRINTD:	ld	a,(hl)		;20A5 Reload next element from code string
 	jr	z,NTCAS0	;20B7 Go get next item if semi-colon
 	call	FRMEVL		;20B9 Evaluate next item to be printed
  	ex	(sp),hl		;20BC Save current code string addr HL = addr of current item
-;
-#ELSE
-;
-PRINT:	call	FILGET		;206f
-	cp	'@'		;2072 - IS it a PRINT@
-	jr	nz,PNOTAT	;2074 - Jump if not PRINT@, otherwise continue
-	call	GETINT		;2076 - Evaluate and get Integer into DE
-	cp	$04		;2079
-	jp	nc,FCERR	;207b
-	push	hl		;207e
-	ld	hl,vidmem	;207f
-	add	hl,de		;2082
-	ld	(CURSOR),hl	;2083
-	ld	a,e		;2086
-	and	$3F		;2087
-	ld	(TTYPOS),a	;2089
-	pop	hl		;208c
-	SYNTAX	(',')		;208d - rst 08h
-PNOTAT:	cp	'#'		;208f - Is it PRINT#
-	jr	nz,NEWCHR	;2091 - Jump if not PRINT#
-	call	CWRTON		;2093
-	ld	a,DEVTAPE	;2096 - Set A to 80H (the write to cassette flag)
-	ld	(PRTFLG),a	;2098 - save current output device flag
-NEWCHR:	dec	hl		;209b
-	GETCHR			;209c - rst 10h
-	call	z,CRDO		;209d
-PRINTC:	jp	z,FINPRT	;20a0
-	cp	TKUSNG		;20a3 - using token
-	jp	z,PRINUS	;20a5
-	cp	TKTAB		;20a8 - tab token
-	jp	z,TABER		;20aa
-	push	hl		;20ad
-	cp	','		;20ae
-	jp	z,COMPRT	;20b0
-	cp	SEMICO		;20b3 - compare with semicolin ';'
-	jp	z,NOTABR	;20b5
-	pop	bc		;20b8
-	call	FRMEVL		;20b9
-	push	hl		;20bc
-#ENDIF
-;
 	TSTDAT			;20bd
 	jr	z,STRDON	;20be
 	call	FOUT		;20c0
@@ -7345,13 +7113,8 @@ MORCOM:	sub	$10		;2130
 ;   HL points to start of message to be displayed
 ; ----------------------------------------------------------------------
 TABER:	call	GTBYTC		;2137 - evaluate the tab number, and return with the result in A
-;
-#IFDEF VER13
 	and	$7F		;213a - Result in A-reg. Do not let it exceed 127
-#ELSE
-	and	$3F		;213a - Do not let it exceed 63
-#ENDIF
-;
+	; and	$3F		;213a - Do not let it exceed 63 (V1.2)
 	ld	e,a		;213c
 	SYNTAX	(')')		;213d - rst 08h
 	dec	hl		;213f
@@ -9548,139 +9311,70 @@ MLOOP:	ld	a,(de)		;2be8
 	ld	l,c		;2bf0
 	ld	(VARTAB),hl	;2bf1
 	ret			;2bf4
+;
+; ======================================================================
+	.ECHO 	" ROM REGION - (2BF5 - 2CA4) - Cload Csave \n"
+; ======================================================================
+;
 ; ----------------------------------------------------------------------
-; 2BF5-2C1E – LEVEL II BASIC CSAVE ROUTINE – “CSAVE”
+; HDBOOT - FreHD HD bootup routine
 ; ----------------------------------------------------------------------
-CSAVE:	call	CWRTON		;2bf5
-	call	FRMEVL		;2bf8
-	push	hl		;2bfb
-	call	ASC2		;2bfc
-	ld	a,$D3		;2bff - the filename header byte (=D3H which is a “S” with the sign bit on)
-	call	CASOUT		;2c01
-	call	TWOCSO		;2c04
-	ld	a,(de)		;2c07
-	call	CASOUT		;2c08
-	ld	hl,(TXTTAB)	;2c0b
-	ex	de,hl		;2c0e
-	ld	hl,(VARTAB)	;2c0f
-LOPSCO:	ld	a,(de)		;2c12
-	inc	de		;2c13
-	call	CASOUT		;2c14
-	CPDEHL			;2c17
-	jr	nz,LOPSCO	;2c18
-	call	CTOFF		;2c1a
-	pop	hl		;2c1d
-	ret			;2c1e
+#IFDEF FREHDBT
+;
+HDBOOT:	call	CLS		;0069 - Clear Screen
+	call	DELAY		;006c - pause for a few seconds
+	ld	a,ROM_MODEL_1	;00ff - ROM parameter to FreHD. 1 for Model1.
+        out	(WRITEROM),a	;0101 - write the value
+        in	a,(READROM)	;0103 - read response
+        cp	0FEh		;0105 - FE is FreHD present and valid code!
+        ret	nz		;0107 - return if no FreHD or old firmware
+        ld	hl,ROM_LOAD	;0108 - load more "rom" from FreHD
+        ld	bc,READROM	;010b - port to read and size counter
+        inir			;010e - bulk transfer
+        jp	ROM_LOAD	;0110 - jump to loader in RAM
 ; ----------------------------------------------------------------------
-; 2C1F-2CA4 – LEVEL II BASIC CLOAD ROUTINE – “CLOAD”
-; ----------------------------------------------------------------------
-;
-#IFDEF VER13
-;
-CLOAD:	sub	$B2		;2C1F Test for CLOAD? * CLOAD routine
-	jr	z,CLOADP	;2C21 Jmp if CLOAD?
-	xor	a		;2C23 Signal CLOAD
-	;
-	.DB	LDBCNN		; Trick LD BC,NN, skipping next 2 instructions
-	;
-CLOADP:	cpl			;2C25 CPL A=-1 if CLOAD?, 0000 if CLOAD
-	inc	hl		;2C26 INC HL position to file name Save CLOAD? / CLOAD flag
-	push	af		;2C27
-	ld	a,(hl)		;2C28 Get next element from code string. Should be file name
-	or	a		;2C29 Set status flags
-	jr	z,CLOADR	;2C2A Jmp if end of line
-	call	FRMEVL		;2C2C Evaluate expression (get file name)
-	call	ASC2		;2C2F Get addr of file name into DE
-CLOADQ:	ld	a,(de)		;2C32 Get file name
-CLOADR:	ld	l,a		;2C33 And move it to L-reg
-	pop	af		;2C34 Restore CLOAD? / CLOAD flags
-	or	a		;2C35 Set status register according to flags
-	ld	h,a		;2C36 H=CLOAD?/CLOAD flag, L=file name
-	ld	(FACLO),hl	;2C37 Save flag and file name in WRA1
-	call	z,SCRTCH	;2C3A If CLOAD call NEW routine to initialize system variables
-	ld	hl,$0000	;2C3D This will cause the drive to be selected when
-	call	CSRDON 		;2C40 We look for leader and synch byte
-;
-#ELSE
-;
-CLOAD:	call	CSRDON		;2c1f
-	ld	a,(hl)		;2c22
-	sub	$B2		;2c23
-	jr	z,CLOADP	;2c25
-	xor	a		;2c27
-;
-	.DB	LDBCNN		;2c28 - Z80 Trick - LD BC,nnnn - skip next 2 bytes
-;
-CLOADP:	cpl			;2c29
-	inc	hl		;2c2a
-	push	af		;2c2b
-	dec	hl		;2c2c
-	GETCHR			;2c2d - rst 10h
-	ld	a,$00		;2c2e
-	jr	z,CLNONM	;2c30
-	call	FRMEVL		;2c32
-	call	ASC2		;2c35
-	ld	a,(de)		;2c38
-CLNONM:	ld	l,a		;2c39
-	pop	af		;2c3a
-	or	a		;2c3b
-	ld	h,a		;2c3c
-	ld	(FACLO),hl	;2c3d
-	call	z,SCRTCH	;2c40
-;
+	.ECHO	"  * FREHDBT uses "
+	.ECHO	($ - HDBOOT)
+	.ECHO	" bytes \n"
 #ENDIF
-	ld	hl,(FACLO)	;2c43
-	ex	de,hl		;2c46
-LOPCLK:	ld	b,$03		;2c47
-LOPCL2:	call	CASIN		;2c49
-	sub	$D3		;2c4c
-	jr	nz,LOPCLK	;2c4e
-	djnz	LOPCL2		;2c50
-	call	CASIN		;2c52
-	inc	e		;2c55
-	dec	e		;2c56
-	jr	z,NONAMC	;2c57
-	cp	e		;2c59
-	jr	nz,SKPFIL	;2c5a
-NONAMC:	ld	hl,(TXTTAB)	;2c5c
+;
 ; ----------------------------------------------------------------------
-; This loop is going to read a byte, compare it to the next byte in the
-; program memory, jump away if it doesn’t match AND CLOAD? was chosen,
-; write	(or overwrite) that byte to memory, check for a zero, and loop
-; back	IF no zero was found.
+; KEYBOUNCE - Routine Added to V1.3 ROMS
 ; ----------------------------------------------------------------------
-DOCRS:	ld	b,$03		;2c5f - number of zeros to look for to stop the load
-DOCSMR:	call	CASIN		;2c61
-	ld	e,a		;2c64
-	sub	(hl)		;2c65
-	and	d		;2c66
-	jr	nz,NOGOOD	;2c67 - if CLOAD? was selected but the bytes don’t match
-	ld	(hl),e		;2c69 - save the character we read to memory pointer in HL
-	call	REASON		;2c6a - Make sure there is more room, if not a ?OM ERROR
-	ld	a,(hl)		;2c6d
-	or	a		;2c6e
-	inc	hl		;2c6f
-	jr	nz,DOCRS	;2c70 - Loop if the byte in Register A isn’t equal to zero
-	call	BCASIN		;2c72
-	djnz	DOCSMR		;2c75 - Do that loop until three zeros in a row have been read
-	ld	(VARTAB),hl	;2c77 - Save the new end of the BASIC program pointer.
-	ld	hl,m_REDDY	;2c7a
-	call	STROUT		;2c7d
-	call	CTOFF		;2c80
-	ld	hl,(TXTTAB)	;2c83 - the start of the BASIC program pointer.
-	push	hl		;2c86 - Save the BASIC program pointer to the STACK, for FINI
-	jp	FINI		;2c87 - reinitialize the BASIC interpreter and continue
-NOGOOD:	ld	hl,NOOKCS	;2c8a
-	call	STROUT		;2c8d
-	jp	STPRDY		;2c90
-SKPFIL:	ld	(vidmem+$3E),a	;2c93
-ZERSRF:	ld	b,$03		;2c96
-GETCHZ:	call	CASIN		;2c98
-	or	a		;2c9b
-	jr	nz,ZERSRF	;2c9c
-	djnz	GETCHZ		;2c9e
-	call	CSRDON3		;2ca0
-	jr	LOPCLK		;2ca3
+#IFDEF KEYBOUNCE
+;
+KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
+	ld 	bc,$0500	;011D the debounce delay
+	call	DELAY		;0120 delay on delay count in BC (18.8 ms)
+	pop	bc		;0123 Restore the Row Address back to BC
+	ld	a,(bc)		;0124 Reload the original flags from active row
+	and	e		;0125 Combine the current flag lists with the original flag bits
+	ret	z		;0126 Return to caller if zero because the row was not active on the second test
+	ld	a,d		;0127 Otherwise, we have a legitimate active row
+	rlca			;0128 Multiply the row index by 2. twice.
+	rlca			;0129 This code previously existed at the calling site
+	jp	KYDRES		;012A Resume the keyboard driver routine
+; ----------------------------------------------------------------------
+	.ECHO	"  * KEYBOUNCE uses "
+	.ECHO	($ - KEYBOU)
+	.ECHO	" bytes \n"
+#ENDIF
+; ----------------------------------------------------------------------
+;
+MEMMSG:	.DB	"Memory Size",0			     ; RS Mem Size Message V1.2
+; ----------------------------------------------------------------------
+	.ECHO	"  * MEMMSG uses "
+	.ECHO	($ - MEMMSG)
+	.ECHO	" bytes \n"
+;
+; ======================================================================
+R2FREE:	.EQU 	($2CA5 - $)
+	.ECHO 	"  "
+	.ECHO	R2FREE
+	.ECHO   " of 176 bytes free \n"
+	.FILL	R2FREE
+; ======================================================================
+;
 ; ----------------------------------------------------------------------
 ; 2CA5-2CA9 – MESSAGE STORAGE LOCATION – “NOOKCS”
 ; ----------------------------------------------------------------------
@@ -10340,17 +10034,19 @@ QED:	pop	bc		;2ff6
 ;  Input Output Map
 ; ----------------------------------------------------------------------
 ;
+#IFDEF EACA80
+;
 ; On Disk Smith System 80 (EACA) there are additional Hardware IO ports
 prtport: .EQU	$FD		; Printer Port (replaces 37E8)
 casport: .EQU	$FE		; Cassette Select Port (replaces 37E4)
+;
+#ENDIF
 ;
 vidcmt:	 .EQU	$FF		; VIDEO I/O Mode select and Cassette Port
 ;
 ; ----------------------------------------------------------------------
 ;  Memory Mapped Hardware
 ; ----------------------------------------------------------------------
-;
-#IFNDEF NO37EXH
 ;
 dskselect:	.EQU $37E1	; Disk Drive Select Latch Address
 casselect:	.EQU $37E4	; Cassette Select Latch Address
@@ -10359,8 +10055,6 @@ diskstat:	.EQU $37EC	; Disk controller status
 disktrk:	.EQU $37ED	; Disk track select
 disksect:	.EQU $37EE	; Disk sector select
 diskdata:	.EQU $37EF	; Disk data byte
-;
-#ENDIF
 ;
 kbdmatrix:	.EQU $3800	; Keyboard matrix start (100H bytes)
 vidmem:		.EQU $3C00	; Video RAM start (400H bytes)
@@ -10544,6 +10238,11 @@ MEMEND:	.EQU	RAM+$200	; End of Reserved RAM Communications area
 ;
 SYSSTK:	.EQU	MEMEND+$88	; Stack address usd by SYSTEM command
 ;
+; ======================================================================
+; Report Free Memory
+	.ECHO 	" "
+	.ECHO	R1FREE + R2FREE
+	.ECHO   " TOTAL bytes free \n"
 ; ======================================================================
 ;
 ; PADDING to create 16KB ROM Image, to allow append multiple
