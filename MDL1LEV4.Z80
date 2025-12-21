@@ -1792,8 +1792,9 @@ INIT:
 ;
 INITA1:	ld	hl,INITR	;0676 - starting address of the RST’s and DCB’s
 	ld	de,RAM		;0679 - starting address of the RAM comms region
-	ld	bc,$0036	;067c - move 36 bytes
+	ld	bc,$36		;067c - move 54 bytes
 	ldir			;067f - Move 6D2-707 to 4000-4035
+;
 	dec	a		;0681 - count down by 2 starting at 0
 	dec	a		;0682 - so effective loop
 	jr	nz,INITA1	;0683 - Loop back until block move occurred 128 times
@@ -1839,6 +1840,7 @@ BOOT:	ld	a,$01		;069f - Drive 0
 	ld	bc,$0000	;06ac
 #ENDIF
 	call	DELAY		;06af - delay (BC times 14.65) about 3 seconds
+;
 BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
 	jr	nz,BOOTDL	;06b4 - Wait until it is ready
 ;
@@ -1849,7 +1851,7 @@ BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
 	ld	(hl),a		;06bf - send command to FDC register
 ;
 BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
-	jr	z,BOOTLP	;06c2 - loop indefinately until data ready
+	jr	z,BOOTLP	;06c2 - loop indefinitely until data ready
 ;
 	ld	a,(de)		;06c4 - load byte from disk data register
 	ld	(bc),a		;06c5 - write byte to ram.
