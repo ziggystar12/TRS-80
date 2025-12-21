@@ -1103,67 +1103,75 @@ SYSTEM:	call	SYSOUT		;02b2 - Call the DOS exit for system command at 41E2H.
 	call	OUTDO		;02bd - Display a * character on the video display.
 	call	QINLIN		;02c0 - get the input from the keyboard
 	jp	c,RESETR	;02c3 - If BREAK key, JMP 06CC entry. BUG 29
-	GETCHR			;02c6 - rst 10h
-	jp	z,SNERR		;02c7
-	cp	'/'		;02ca
-	jr	z,GODO		;02cc
-	call	CSRDON		;02ce
-LOPHD:	call	CASIN		;02d1
-	cp	$55		;02d4
-	jr	nz,LOPHD	;02d6
-	ld	b,$06		;02d8
-CHKBYT:	ld	a,(hl)		;02da
-	or	a		;02db
-	jr	z,GETDT		;02dc
-	call	CASIN		;02de
-	cp	(hl)		;02e1
-	jr	nz,LOPHD	;02e2
-	inc	hl		;02e4
-	djnz	CHKBYT		;02e5
-GETDT:	call	BCASIN		;02e7
-GETDT2:	call	CASIN		;02ea
-	cp	$78		;02ed
+	GETCHR			;02c6 - rst 10h - first byte of user input
+	jp	z,SNERR		;02c7 - if no input then a syntax error
+	cp	'/'		;02ca - check for a slash command
+	jr	z,GODO		;02cc - jump to routine to handle execution
+; ----------------------------------------------------------------------
+; 02CE - Load Binary program from tape
+; ----------------------------------------------------------------------
+	call	CSRDON		;02ce - turn on cassette motor here
+LOPHD:	call	CASIN		;02d1 - read one byte from cassette
+	cp	$55		;02d4 - check for header byte
+	jr	nz,LOPHD	;02d6 - loop until header found
+	ld	b,6		;02d8 - length of filename to read from tape
+CHKBYT:	ld	a,(hl)		;02da - START LOOP - Get character in inout buffer
+	or	a		;02db - set flags
+	jr	z,GETDT		;02dc - if character is end of buffer, skip check
+	call	CASIN		;02de - read one byte from cassette
+	cp	(hl)		;02e1 - did it match users character
+	jr	nz,LOPHD	;02e2 - if not skip to next program on tape
+	inc	hl		;02e4 - next character to check
+	djnz	CHKBYT		;02e5 - LOOP to check next character
+;
+GETDT:	call	BCASIN		;02e7 - Blink * in top right corner
+GETDT2:	call	CASIN		;02ea - read one byte from cassette
+	cp	$78		;02ed - check for execution address header byte
 	jr	z,ENBLK		;02ef
-	cp	$3C		;02f1
-	jr	nz,GETDT2	;02f3
-	call	CASIN		;02f5
-	ld	b,a		;02f8
-	call	CADRIN		;02f9
-	add	a,l		;02fc
-	ld	c,a		;02fd
-LDATIN:	call	CASIN		;02fe
-	ld	(hl),a		;0301
-	inc	hl		;0302
-	add	a,c		;0303
-	ld	c,a		;0304
-	djnz	LDATIN		;0305
-	call	CASIN		;0307
-	cp	c		;030a
-	jr	z,GETDT		;030b
-	ld	a,$43		;030d
-	ld	(vidmem+$3E),a	;030f
-	jr	GETDT2		;0312
+	cp	$3C		;02f1 - check for file block header byte
+	jr	nz,GETDT2	;02f3 - loop until find a correct header byte
+;
+	call	CASIN		;02f5 - read number of Bytes in the Block
+	ld	b,a		;02f8 - store byte count in B for loop
+	call	CADRIN		;02f9 - read two bytes Block Starting address -> HL
+	add	a,l		;02fc - Add LSB of starting address to byte count
+	ld	c,a		;02fd - Store Checksum (starting) in C register
+LDATIN:	call	CASIN		;02fe - read one byte from cassette
+	ld	(hl),a		;0301 - store the byte in memory
+	inc	hl		;0302 - next address
+	add	a,c		;0303 - Calculate the checksum
+	ld	c,a		;0304 - Update Checksum in C register
+	djnz	LDATIN		;0305 - LOOP
+	call	CASIN		;0307 - read one byte from cassette - Checksum
+	cp	c		;030a - Is it same the as calculated checksum
+	jr	z,GETDT		;030b - if GOOD Checkum - LOOP BACK for next block
+;
+	ld	a,'C'		;030d - C Character
+	ld	(vidmem+$3E),a	;030f - Write into Video Memory
+	jr	GETDT2		;0312 - LOOP BACK for next block
+;
 ; ----------------------------------------------------------------------
 ; 0314H – Read 2 bytes from the tape into Register Pair HL – “CADRIN”
 ;   This routine is commonly used by the SYSTEM routine to read
 ;   the last two bytes on tape which give the entry point.
 ; ----------------------------------------------------------------------
-CADRIN:	call	CASIN		;0314
+CADRIN:	call	CASIN		;0314 - read one byte from cassette
 	ld	l,a		;0317
-	call	CASIN		;0318
+	call	CASIN		;0318 - read one byte from cassette
 	ld	h,a		;031b
 	ret			;031c
 ; ----------------------------------------------------------------------
 ; 031DH – Execute the Cassette Program which was Loaded – “GODO”
 ; ----------------------------------------------------------------------
-GODO:	ex	de,hl		;031d
-	ld	hl,(TEMP)	;031e
-	ex	de,hl		;0321
+GODO:	ex	de,hl		;031d - put user input buffer into DE
+	ld	hl,(TEMP)	;031e - execution address read from tape
+	ex	de,hl		;0321 - Swap back, user input buffer into HL
 	GETCHR			;0322 - rst 10h
-	call	nz,LINGET	;0323
-	jr	nz,SYSTEM	;0326
-	ex	de,hl		;0328
-	jp	(hl)		;0329
+	call	nz,LINGET	;0323 - Convert to ascii string
+	jr	nz,SYSTEM	;0326 - if no address defined Display * promt
+	ex	de,hl		;0328 - execution address into HL
+	jp	(hl)		;0329 - jump to execution address
+;
 ; ----------------------------------------------------------------------
 ; 032AH-0347H – OUTPUT ROUTINE – “OUTCH1” and “OUTDO”
 ;   This is a general purpose output routine which outputs a byte from
