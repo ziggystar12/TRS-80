@@ -22,11 +22,11 @@
 ;
 ; Rom Additional Features
 #DEFINE LOWCASE ; Uncomment to Disable Alpha Character Translation (0471h)
-#DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup ()
+#DEFINE FREHDBT ; Uncomment to enable FreHD Auto boot at startup (069Ch)
 #DEFINE NMIHARD ; Uncomment to set NMI Reset as always hard reset. (0066h)
 ;
 ; Rom 1.3 Features (can be disabled to save space)
-#DEFINE KEYBOUNCE ; Uncomment to enable 1.3 Keyboard Debounce
+#DEFINE KEYBOUNCE ; Uncomment to enable 1.3 Keyboard Debounce (03FBh)
 ;
 ; Build Features
 ; #DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
