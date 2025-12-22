@@ -1,6 +1,7 @@
 ;
 ; ======================================================================
-;        TRS-80 Model I Level IV BASIC ROM
+;          TRS-80 Model I Level II BASIC ROM
+;              "Modernised" Revision 1.4
 ;
 ;     Source Code Created By : kiwisincebirth - 2025
 ;     [https://github.com/kiwisincebirth/TRS-80]
@@ -36,21 +37,9 @@
 ;     INFORMATION
 ; ----------------------------------------------------------------------
 ;
-; Original disassembled souce code obtained from:
-;   https://gitlab.com/retroabandon/trs80i34-re
-;
-; With Following Additions
-;   * Replaced all auto generated Labels with meaninful labels
-;   * Ensured all jumps referenced code labels
-;   * Replaced $3xxx hardware references with EQU defintions
-;   * Replaced $4xxx buffer references with EQU definitions
-;   * Replaced op-code with Byte definitions for Data Segments
-;   * Replaced incorrect op-codes, where Better Else code "Trick" was was used.
-;   * Added V1.3 modifications into the source code, with use of #IFDEF
-;   * Added code Documentation from various sources
-;
-; This source code has been compiled with Telemark Assembler, and tested
-; using a DIFF tool to ensure binary compatibility of the generated output.
+; Code was based off the Model 1 Rev 1.3 source code, provided in the GIT Repo
+; and enhanced modernised, with new features removing support for cassette
+; based operations.
 ;
 ; ======================================================================
 ;      ERRORS - "TRS-80 ROM Errors - Vernon Hester"
