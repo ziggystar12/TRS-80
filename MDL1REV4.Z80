@@ -619,9 +619,12 @@ USEDEF:	dec	hl		;00e7 - minus 1
 ; 0105H-011BH – MESSAGE STORAGE
 ; ----------------------------------------------------------------------
 ;
-HDGMSG:	.DB	"Radio Shack Level II BASIC",ENTER	; RS L2 Basic Message V1.2
-	.DB	"(Rev 1.4a)",ENTER,0
-	.FILL	$012D - $				; UNUSED
+MEMMSG:	.DB	"MEMORY SIZE",0			     ; RS Mem Size Message V1.2
+HDGMSG:	.DB	"R/S Level II BASIC Rev 1.4",ENTER,0 ; RS L2 Basic Message V1.4
+;
+; 	.DB	"RADIO SHACK LEVEL II BASIC",ENTER,0 ; RS L2 Basic Message V1.2
+;
+	.FILL	$012D - $	; Padding (also checks for overrun)
 ;
 ; ----------------------------------------------------------------------
 ; 012DH – ?L3 ERROR ENTRY POINT – "L3ERR"
@@ -9372,13 +9375,6 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 	.ECHO	($ - KEYBOU)
 	.ECHO	" bytes \n"
 #ENDIF
-; ----------------------------------------------------------------------
-;
-MEMMSG:	.DB	"Memory Size",0			     ; RS Mem Size Message V1.2
-; ----------------------------------------------------------------------
-	.ECHO	"  * MEMMSG uses "
-	.ECHO	($ - MEMMSG)
-	.ECHO	" bytes \n"
 ;
 ; ======================================================================
 R2FREE:	.EQU 	($2CA5 - $)
