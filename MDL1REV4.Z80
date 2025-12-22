@@ -26,6 +26,7 @@
 #DEFINE LOWCASE ; Disable Alpha Character Translation (0471h)
 #DEFINE FREHDBT ; Enable FreHD Auto boot at startup (069Ch)
 #DEFINE NMIHARD ; Set NMI Reset as always hard reset. (0066h)
+#DEFINE NEWBOOT ; New diskette? startup routine. ()
 ;
 ; Rom 1.3 Features (can be disabled to save space)
 #DEFINE KEYBOUNCE ; Enable 1.3 Keyboard Debounce (03FBh)
@@ -41,6 +42,13 @@
 ; Code was based off the Model 1 Rev 1.3 source code, provided in the GIT Repo
 ; and enhanced modernised, with new features removing support for cassette
 ; based operations.
+;
+; ======================================================================
+;      CHANGELOG
+; ----------------------------------------------------------------------
+;
+; December 2025 - Added NEWBOOT - (John SwiderskI)
+; New diskette? startup routine that clears screen, allows for break and retries
 ;
 ; ======================================================================
 ;      ERRORS - "TRS-80 ROM Errors - Vernon Hester"
@@ -85,6 +93,9 @@
 	.ECHO	" FREHDBT - FreHD autoboot support enabled \n"
 #ENDIF
 
+#IFDEF NEWBOOT
+	.ECHO	" NEWBOOT - Diskette? prompt support enabled \n"
+#ENDIF
 ;
 ; ----------------------------------------------------------------------
 ;   BASIC TOKENS IDS
@@ -1850,9 +1861,19 @@ BOOTDL:	bit	0,(hl)		;06b2 - is the diskette controller is busy
 	ld	a,$8C		;06bd - command to read single IBM formatted sector
 	ld	(hl),a		;06bf - send command to FDC register
 ;
+#IFDEF NEWBOOT
+;
+	JP	NEWBOOTENTRY	; Jump to the New Boot Loop
+	NOP			; 1 byte padding
+;
+#ELSE
+;
 BOOTLP:	bit	1,(hl)		;06c0 - check to see if there is data available
 	jr	z,BOOTLP	;06c2 - loop indefinitely until data ready
 ;
+#ENDIF
+;
+BOOTRD:
 	ld	a,(de)		;06c4 - load byte from disk data register
 	ld	(bc),a		;06c5 - write byte to ram.
 	inc	c		;06c6 - next mem address
@@ -9370,6 +9391,52 @@ KEYBOU	push	bc		;011C Save Row Address in BC into the STACK
 ; ----------------------------------------------------------------------
 	.ECHO	"  * KEYBOUNCE uses "
 	.ECHO	($ - KEYBOU)
+	.ECHO	" bytes \n"
+#ENDIF
+;
+; ----------------------------------------------------------------------
+; New diskette Startup routine (CREDIT : JOHN SWIDERSKI)
+; clears screen, and allows for break and retries
+; ----------------------------------------------------------------------
+#IFDEF NEWBOOT
+;
+NEWBOOTENTRY:
+;
+; If DRQ never appears, wait ~2 seconds then restart BOOT (full re-init).
+; IMPORTANT: Do not use D/E as counters (DE must stay = diskdata for ld a,(de)).
+	exx
+	ld	hl,$C000	; ~2 second-ish timeout (tune if needed)
+	exx
+;
+BOOTLP:
+	bit	1,(hl)		; DRQ ready?
+	jr	nz,BOOTRD	; yes -> read a byte now
+;
+	ld	a,(kbdmatrix+$40) ; check BREAK while waiting
+	and	$04
+	jp	nz,INIT2
+;
+	; countdown until we restart BOOT
+	exx
+	dec	hl
+	ld	a,h
+	or	l
+	exx
+	jr	nz,BOOTLP
+;
+	; Display the Diskette Message
+	ld	hl,DSKMSG	;00fc - Radio Shack L2 Basic - Message
+	call	STROUT		;00ff - print the message
+;
+	; timed out waiting for DRQ -> start over
+	jp	BOOT
+;
+DSKMSG:	.DB	CLINE, ELINE	; Start of Line, Erase to EOL
+	.DB	"Diskette?",0	; diskette message
+;
+; ----------------------------------------------------------------------
+	.ECHO	"  * NEWBOOT uses "
+	.ECHO	($ - NEWBOOTENTRY)
 	.ECHO	" bytes \n"
 #ENDIF
 ; ----------------------------------------------------------------------
