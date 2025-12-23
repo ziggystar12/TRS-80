@@ -788,6 +788,8 @@ RANDOM:	ld	a,r		;01d3 - R (refresh) Reg - semi random number.
 ;
 ; ----------------------------------------------------------------------
 ; CASSETTE ROUTINE (EVALUATE DRIVE NUMBER) – “CTON”
+;   This Code was left over after removing all the unneeded code
+;   but still needed as it updates registers needed by caller
 ; ----------------------------------------------------------------------
 CTON:	ld	a,(hl)		;01fe - char from BASIC program pointer
 	sub	'#'		;01ff - Check for a # character
@@ -797,6 +799,8 @@ CTON:	ld	a,(hl)		;01fe - char from BASIC program pointer
 	ret			;021d
 ; ----------------------------------------------------------------------
 ; CASSETTE ROUTINE (TURN ON CASSETTE AND WRITE LEADER) – “CWRTON”
+;   This Code was left over after removing all the unneeded code
+;   but still needed as it updates registers needed by caller
 ; ----------------------------------------------------------------------
 CWRTON: call	CTON		;0284
 	ld	a,$A5		;028f - sync byte (A5H)      **NEEDED**
@@ -6856,7 +6860,7 @@ LPRIN1:	jp	NEWCHR		;206c * * *
 ; ----------------------------------------------------------------------
 ; 206F-2177 – LEVEL II BASIC PRINT@ ROUTINE – FOR v1.0 ONLY – “PRINT”
 ; ----------------------------------------------------------------------
-PRINT:	call	FILGET		;206f
+PRINT:	call	FILGET		;206f DOS exit for PRINT processing.
 	cp	'#'		;2072 Check for Cassette
 	jr	nz,PNOTAT	;2074
 	call	CWRTON		;2076 Write header on cassette file
@@ -7007,10 +7011,12 @@ FINPRT:
 ;	ld	a,(PRTFLG)	;2169 - current output device flag
 ;	or	a		;216c - check the flags
 ;	call	m,CTOFF		;216d - If cassette, turn it off
+;
 	xor	a		;2170 - DEV0VID
 	ld	(PRTFLG),a	;2171 - set current output device type = VIDEO
 	call	FINDRT		;2174 - DOS Exit Point
 	ret			;2177
+;
 	.FILL	$2178 - $	; UNUSED
 ; ----------------------------------------------------------------------
 ; 2178-217E – MESSAGE STORAGE LOCATION FOR REDO MESSAGE – “TRYAGN”
@@ -7030,7 +7036,7 @@ TRMNOK:	ld	a,(FLGINP)	;217f
 	jp	nz,DATSNE	;2183
 	ld	a,(CASFLG)	;2186 - test the cassette flag
 	or	a		;2189
-	ld	e,ERRFD		;218a - ?FD ERROR
+	ld	e,ERRFD		;218a - ?FD ERROR - bad data file error
 	jp	z,ERROR		;218c - If input device is cassette
 	pop	bc		;218f
 	ld	hl,TRYAGN	;2190
@@ -7041,17 +7047,16 @@ TRMNOK:	ld	a,(FLGINP)	;217f
 ; ----------------------------------------------------------------------
 ; 219A-21EE – LEVEL II BASIC INPUT ROUTINE – “INPUT”
 ; ----------------------------------------------------------------------
-INPUT:	call	ERRDIR		;219a
-	ld	a,(hl)		;219d
-	call	EXUNKN		;219e
-	sub	'#'		;21a1 - compare with #
-	ld	(CASFLG),a	;21a3
-	ld	a,(hl)		;21a6
-	jr	nz,INTCAS	;21a7
+INPUT:	call	ERRDIR		;219a - Check to see if there is an illegal direct
+	ld	a,(hl)		;219d - char in basic program
+	call	EXUNKN		;219e - Pass Control to a DOS exit.
+	sub	'#'		;21a1 - compare with # indicating from Cassette
+	ld	(CASFLG),a	;21a3 - store value in Flag
+	ld	a,(hl)		;21a6 - get the character again
+	jr	nz,INTCAS	;21a7 - Jump if Not "#" input from casssette
 ;
-	ld	e,ERRFD		; ?FD ERROR - bad data file
-	jp	z,ERROR		; If input device is cassette
-	.FILL	$21C9 - $	; UNUSED
+	ld	e,ERRFD		; ?FD ERROR - bad data file error
+	jp	ERROR		; If input device is cassette
 ;
 ;	call	CSRDON		;21a9
 ;	push	hl		;21ac
@@ -7069,6 +7074,9 @@ INPUT:	call	ERRDIR		;219a
 ;	ld	hl,(BUFPNT)	;21c3
 ;	dec	hl		;21c6
 ;	jr	INPCN3		;21c7
+; ----------------------------------------------------------------------
+	.FILL	$21C9 - $	; UNUSED (above cassette code)
+; ----------------------------------------------------------------------
 ;
 INTCAS:	ld	bc,NOTQTI	;21c9
 	push	bc		;21cc
