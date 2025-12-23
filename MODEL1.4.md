@@ -65,6 +65,8 @@ There are several optional features.
   or where the font rom on the machine has the alternate characters in the 00h 1Fh range (0471h)
 * `#DEFINE KEYBOUNCE` - Enables the Keyboard debounce routines that where introduced in rev1.3
   These routine can be disabled saving some space in the ROMS
+* `#DEFINE NEWBOOT` - Enables a new boot routine which asks for "diskette?" when no disk is detected and retries. It also allows for break to be pressed at any time.
+  These routine can be disabled saving some space in the ROMS
 
 Bug Fixes Applied
 * `#DEFINE BUGFIX1` - Fix Error 1 - 04F6H - 32 Character Mode Line Length
