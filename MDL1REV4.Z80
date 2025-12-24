@@ -27,14 +27,14 @@
 #DEFINE LOWCASE ; Disable Alpha Character Translation (0471h)
 #DEFINE FREHDBT ; Enable FreHD Auto boot at startup (069Ch)
 #DEFINE NMIHARD ; Set NMI Reset as always hard reset. (0066h)
-#DEFINE NEWBOOT ; New diskette? startup routine. (06C0
+#DEFINE NEWBOOT ; New diskette? startup routine. (06C0)
 ;
 ; Rom 1.3 Features (can be disabled to save space)
 #DEFINE KEYBOUNCE ; Enable 1.3 Keyboard Debounce (03FBh)
 #DEFINE NOMEMSIZE ; Uncomment to skip Memory Size? prompt (John Swiderski)
 ;
 ; Build Features
-#DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
+; #DEFINE SIZE16K ; Uncomment to build a $FF padded 16K Image for banked ROM
 ; #DEFINE DONTEND ; Uncomment to Disable END directive, use if #include
 ;
 ; ======================================================================
